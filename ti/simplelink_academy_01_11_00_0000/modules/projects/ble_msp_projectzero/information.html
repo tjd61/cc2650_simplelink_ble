@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<title>BLE MSP_ProjectZero Project</title>
+
+<xmp theme="united2" style="display:none;" class="col-xs-6">
+
+This project is based on the ProjectZero sample application in the MSP Connectivity Library.
+
+The following changes are done:
+- Import some files to the CCS Workspace instead of linking to filesystem.
+- Enabled UART Log messages
+
+File import
+================
+In order to have the training as non-destructive as possible, certain files are imported to the workspace, that is, copied from a location on disk to wherever the Code Composer Studio workspace directory is.
+
+This means that if you change for example ProjectZero.c, the changes to the file will not be reflected in the directory the SimpleLink Academy files are installed in, but the directory you select as workspace directory when Code Composer Studio starts up.
+
+
+File | Description
+--- | ---------
+ProjectZero.c | User application task. Main task loop and BLE callbacks.
+button_service.h | Button service header.
+button_service.c | Button service implementation. 
+led_service.h | LED service header.
+led_service.c | LED service implementation. 
+ProjectZero_soln.c | Solution file. This is the cheatsheet file for the training.
+button_service_soln.h | Solution file. This is the cheatsheet file for the training.
+button_service_soln.c | Solution file. This is the cheatsheet file for the training.
+led_service_soln.h | LED service header.
+led_service_soln.c | LED service implementation. 
+
+Note also that other files in the projects are linked from the file system directly. These have the following icon with a tiny arrow:
+
+![LinkFile](../../../web_support/resources/linked_file_zoomed.png)
+
+Any changes done to these files are reflected in all projects that use these files.
+
+UART Log
+===================
+
+The xdc_runtime_Log_DISABLE_ALL has been excluded from the build so that the Log statements can be printed to the console. The default baud rate for the project is 115200.
+
+
+
+
+
+</xmp>
+<link rel="stylesheet" href="../../../web_support/highlight/styles/zenburn.css"/>
+<script src="../../../web_support/strapdown/vendor/jquery-1.11.2.min.js"></script>
+<script src="../../../web_support/strapdown/vendor/bootstrap.min.js"></script>
+<script src="../../../web_support/highlight/highlight.pack.js"></script>
+<script src="../../../web_support/strapdown/v/0.2/strapdown.js"></script>
+</html>

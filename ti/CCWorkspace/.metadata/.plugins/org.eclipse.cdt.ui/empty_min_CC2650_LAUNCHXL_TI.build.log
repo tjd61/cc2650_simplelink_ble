@@ -1,0 +1,54 @@
+
+**** Build of configuration Debug for project empty_min_CC2650_LAUNCHXL_TI ****
+
+"C:\\ti\\ccs1031\\ccs\\utils\\bin\\gmake" -k -j 2 all -O 
+ 
+making ../src/sysbios/rom_sysbios.aem3 ...
+Building file: "../empty_min.cfg"
+Invoking: XDCtools
+"C:/ti/xdctools_3_32_00_06_core/xs" --xdcpath="C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/packages;C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/tidrivers_cc13xx_cc26xx_2_21_00_04/packages;C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/bios_6_46_01_37/packages;C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/uia_2_01_00_01/packages;" xdc.tools.configuro -o configPkg -t ti.targets.arm.elf.M3 -p ti.platforms.simplelink:CC2650F128 -r release -c "C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS" --compileOptions "-mv7M3 --code_state=16 --float_support=vfplib -me --include_path=\"C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI\" --include_path=\"C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI\" --include_path=\"C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/cc26xxware_2_24_03_17272\" --include_path=\"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include\" --define=ccs -g --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi  " "../empty_min.cfg"
+gmake[1]: Nothing to be done for 'all'.
+making package.mak (because of config.bld) ...
+configuring empty_min.xem3 from package/cfg/empty_min_pem3.cfg ...
+generating custom ROM library makefile ... 
+Starting build of library sources ...
+making C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI/src/sysbios/rom_sysbios.aem3 ...
+gmake[1]: Entering directory `C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI/src/sysbios'
+clem3 C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/bios_6_46_01_37/packages/ti/sysbios/BIOS.c ...
+asmem3 C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/bios_6_46_01_37/packages/ti/sysbios/family/arm/m3/Hwi_asm.sv7M ...
+asmem3 C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/bios_6_46_01_37/packages/ti/sysbios/family/arm/m3/Hwi_asm_switch.sv7M ...
+asmem3 C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/bios_6_46_01_37/packages/ti/sysbios/family/arm/m3/IntrinsicsSupport_asm.sv7M ...
+asmem3 C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/bios_6_46_01_37/packages/ti/sysbios/family/arm/m3/TaskSupport_asm.sv7M ...
+arem3 rom_sysbios.obj m3_Hwi_asm.obj m3_Hwi_asm_switch.obj m3_IntrinsicsSupport_asm.obj m3_TaskSupport_asm.obj ...
+gmake[1]: Leaving directory `C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI/src/sysbios'
+Build of libraries done.
+clem3 package/cfg/empty_min_pem3.c ...
+"package/cfg/empty_min_pem3.c", line 7751: warning #112-D: statement is unreachable
+Finished building: "../empty_min.cfg"
+ 
+        1 file(s) copied.
+Building file: "../CC2650_LAUNCHXL.c"
+Building file: "../ccfg.c"
+Invoking: Arm Compiler
+"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/bin/armcl" -mv7M3 --code_state=16 --float_support=vfplib -me --include_path="C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI" --include_path="C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI" --include_path="C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/cc26xxware_2_24_03_17272" --include_path="C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include" --define=ccs -g --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi --preproc_with_compile --preproc_dependency="CC2650_LAUNCHXL.d_raw" --cmd_file="configPkg/compiler.opt"  "../CC2650_LAUNCHXL.c"
+Invoking: Arm Compiler
+"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/bin/armcl" -mv7M3 --code_state=16 --float_support=vfplib -me --include_path="C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI" --include_path="C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI" --include_path="C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/cc26xxware_2_24_03_17272" --include_path="C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include" --define=ccs -g --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi --preproc_with_compile --preproc_dependency="ccfg.d_raw" --cmd_file="configPkg/compiler.opt"  "../ccfg.c"
+Finished building: "../ccfg.c"
+ 
+Building file: "../empty_min.c"
+Invoking: Arm Compiler
+"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/bin/armcl" -mv7M3 --code_state=16 --float_support=vfplib -me --include_path="C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI" --include_path="C:/ti/CCWorkspace/empty_min_CC2650_LAUNCHXL_TI" --include_path="C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/cc26xxware_2_24_03_17272" --include_path="C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include" --define=ccs -g --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi --preproc_with_compile --preproc_dependency="empty_min.d_raw" --cmd_file="configPkg/compiler.opt"  "../empty_min.c"
+Finished building: "../empty_min.c"
+Finished building: "../CC2650_LAUNCHXL.c"
+ 
+ 
+making ../src/sysbios/rom_sysbios.aem3 ...
+gmake[2]: Nothing to be done for 'all'.
+Building target: "empty_min_CC2650_LAUNCHXL_TI.out"
+Invoking: Arm Linker
+"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/bin/armcl" -mv7M3 --code_state=16 --float_support=vfplib -me --define=ccs -g --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi -z -m"empty_min_CC2650_LAUNCHXL_TI.map" --heap_size=0 --stack_size=256 -i"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/lib" -i"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="empty_min_CC2650_LAUNCHXL_TI_linkInfo.xml" --rom_model -o "empty_min_CC2650_LAUNCHXL_TI.out" "./CC2650_LAUNCHXL.obj" "./ccfg.obj" "./empty_min.obj" "../CC2650_LAUNCHXL.cmd" -l"configPkg/linker.cmd"  -l"C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/cc26xxware_2_24_03_17272/driverlib/bin/ccs/driverlib.lib" -llibc.a 
+<Linking>
+Finished building target: "empty_min_CC2650_LAUNCHXL_TI.out"
+ 
+
+**** Build Finished ****

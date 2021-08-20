@@ -1,0 +1,23 @@
+
+**** Build of configuration Debug for project TI-RTOS Lab 1 LAUNCHXL ****
+
+"C:\\ti\\ccs1031\\ccs\\utils\\bin\\gmake" -j -k -j 2 all -O 
+ 
+making ../src/sysbios/sysbios.aem3 ...
+gmake[1]: Nothing to be done for 'all'.
+Building file: "../lab1-main.c"
+Invoking: Arm Compiler
+"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/bin/armcl" -mv7M3 --code_state=16 -me --include_path="C:/ti/CCWorkspace/TI-RTOS Lab 1 LAUNCHXL" --include_path="C:/ti/tirtos_cc13xx_cc26xx_2_20_01_08/products/cc26xxware_2_24_02_17393" --include_path="C:/ti/CCWorkspace/TI-RTOS Lab 1 LAUNCHXL" --include_path="C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include" --define=CC26XXWARE -g --gcc --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi --preproc_with_compile --preproc_dependency="lab1-main.d_raw" --cmd_file="configPkg/compiler.opt"  "../lab1-main.c"
+"../lab1-main.c", line 71: warning #179-D: variable "urgentWorkTaskStack" was declared but never referenced
+Finished building: "../lab1-main.c"
+ 
+making ../src/sysbios/sysbios.aem3 ...
+gmake[2]: Nothing to be done for 'all'.
+Building target: "TI-RTOS Lab 1 LAUNCHXL.out"
+Invoking: Arm Linker
+"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/bin/armcl" -mv7M3 --code_state=16 -me --define=CC26XXWARE -g --gcc --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi -z -m"TI-RTOS Lab 1 LAUNCHXL.map" --heap_size=0 --stack_size=256 -i"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/lib" -i"C:/ti/ccs1031/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="TI-RTOS Lab 1 LAUNCHXL_linkInfo.xml" --rom_model -o "TI-RTOS Lab 1 LAUNCHXL.out" "./CC2650_LAUNCHXL.obj" "./ccfg.obj" "./lab1-main.obj" "../cc26x0f128.cmd" -l"configPkg/linker.cmd"  -l"C:/ti/tirtos_cc13xx_cc26xx_2_20_01_08/products/cc26xxware_2_24_02_17393/driverlib/bin/ccs/driverlib.lib" -llibc.a 
+<Linking>
+Finished building target: "TI-RTOS Lab 1 LAUNCHXL.out"
+ 
+
+**** Build Finished ****

@@ -1,0 +1,9 @@
+digraph "tirtos" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_b14587e5faa8751b3ef162b7a320070c {
+    graph [ bgcolor="#ddddee", pencolor="black", label="ports" fontname="Helvetica", fontsize="10", URL="dir_b14587e5faa8751b3ef162b7a320070c.html"]
+  dir_367a8e5795aa1e6ceafecb075b5ac4ea [shape=box, label="tirtos", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_367a8e5795aa1e6ceafecb075b5ac4ea.html"];
+  }
+}

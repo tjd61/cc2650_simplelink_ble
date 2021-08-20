@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Project Zero for the CC1350 LaunchPad Dual Mode</title>
+</head>
+
+<xmp theme="united2" style="display:none;" class="col-xs-6">
+
+Project Zero CC1350 LaunchPad
+==================================
+
+This example will show you how to build/compile your own images, using Code Composer Studio (CCS), for use with the `BLE OAD` service.
+
+Software Prerequisites
+--------------------------
+Before starting on this tutorial you need to download and [install Code Composer Studio 6.2.0 or later](http://www.ti.com/tool/CCSTUDIO)
+
+Hardware Prerequisites
+--------------------------
+
+* One CC1350 LaunchPad
+* A Micro USB Cable
+* 430BOOST-SHARP96 LCD Booster Pack (Optional)
+
+![Resource Explorer](resources/cc1350_launchpad_w_lcd.jpg)
+
+Building firmware images for OAD
+--------------------------------
+We will use the rfWsnDmNode example in CCS as a basis for this tutorial.
+<br>Basically any of the examples in the TI-RTOS CC13xx/CC26xx SDK can be used to build a OAD capable image, but since the rfWsnNode and Concentrator examples already contain code for getting back to BLE stack mode (i.e. double button press for 10s) we will for the sake of simplicity use this as a starting point.
+
+To get started follow these steps:
+
+1. Import `rfWsnDmNode` from the Resource Explorer in Code Composer Studio.
+
+1. In Project Properties -> General, check that you are using the ARM compiler from TI.
+
+1. In Project Properties -> ARM Compiler -> Advanced Options -> predefined symbols, add `USE_BIM` define.
+
+3. In Project Properties -> ARM Hex Utility -> check `Enable ARM Hex` Utility.
+
+4. In `CC1350_LAUNCHXL.cmd` move the application start address to page 2 + 10B BIM header:
+
+	```c
+	//#define FLASH_BASE		0X0
+	//#define FLASH_SIZE		0X20000
+	#define FLASH_BASE		0X1010
+	#define FLASH_SIZE		0X1EFF0```
+
+5. Open `rfDmExamples.cfg`, click the `cfg script` tab to edit the file directly and not use the GUI editor.
+
+	a. Comment out the ROM config at line 368 so that TIRTOS is not in ROM. This is because the ROM'ed TIRTOS assumes TIRTOS const data is in the same location as the BIM header.
+
+	```c
+	/* ================ ROM configuration ================ */
+	/*
+	* To use BIOS in flash, comment out the code block below.
+
+	var ROM = xdc.useModule('ti.sysbios.rom.ROM');
+	if (Program.cpu.deviceName.match(/CC26/)) {
+		ROM.romName = ROM.CC2650;
+	}
+	else if (Program.cpu.deviceName.match(/CC13/)) {
+		ROM.romName = ROM.CC1350;
+	}
+	*/```
+
+	b. Move the reset vector at line 202 to be above page 0 and the BIM header:
+
+	```c
+	/*
+	* Assign an address for the reset vector.
+	*
+	* Default is 0x0, which is the start of Flash. Ordinarily this setting should
+	* not be changed.
+	*/
+	//m3Hwi.resetVectorAddress = 0x0;
+	m3Hwi.resetVectorAddress = 0x1010;```
+
+6. Right-click on the file `ccfg.c` file, select the item `Exclude from Build`
+
+7. Build the project to generate the intel hex file. 
+
+   This file is placed in the Debug folder of the project.
+
+8. Convert the .hex to the format required by the iOS OAD app
+
+   a. Clone or copy the OAD conversion script at [ti-simplelink Github](https://github.com/ti-simplelink/ble_examples/tree/master/tools/scripts/oad)
+
+		- Click on the folder `oad`
+
+		- Click on the file `oad_image_tool.py`
+
+		- Make a note of the Python version required (scroll down).
+
+		- Copy the content to a text file, save as `oad_image_tool.py`
+
+   b. install `python`
+
+		- Use version stated in `oad_image_tool.py`
+
+		- During setup, enable feature `Add python.exe to path`		   
+
+   c. install `crcmod`:
+
+		- Download sourcefile from [python.org](https://pypi.python.org/pypi/crcmod#downloads)
+
+		- Extract the files
+
+		- Cd into the dir and run 'python setup.py install'
+
+   d. install `intelhex`:
+
+		- Download from [python.org](https://pypi.python.org/pypi/IntelHex#downloads)
+
+		- Extract the files
+
+		- Cd into the dir and run 'python setup.py install'
+
+9. Run the script below to convert the file:
+	
+	```c 
+	python ~/[path_to_script]/oad_image_tool.py rfWsnDmNodeOad_EU_CC1350_LAUNCHXL_TI_CC1350F128.hex -ob rfWsnDmNode_EU_CC1350LP_v1-03.bin -m 0x1000```
+
+10. Send the resulting `*_oad.bin` file to an email account that you can access from you iOS device.
+
+11. Open the SensorTag app on the iOS device, if the CC1350LP is running the BLE FW give it a reset and you should see it in the list of devices, click on the CC135LP and open the sensor view.
+
+12. Open the e-mail on the iOS device, `*_oad.bin` click the attachment and open with the SensorTag App.
+
+13. When it switches back to the SensorTag App select FW Download then select the file that was in the e-mail which should now be in the list of available firmwares.
+
+14. The App built at the start should be downloaded to the LP, once downloaded the CC1350LP will reset and run your app!
+[[y! Compiler Support
+If the App does not start automatically you may need to reset the device manually by pressing the reset button.
+]]
+14. To get back to the BLE stack/app mode press and hold `BTN-1` and `BTN-2` for >5s until the green led blinks rapidly (note this requires the button logic from the one of the fWsnDm examples). If the BLE FW does not start you may need to reset the device manually.
+
+Explore the CC1350 resources
+----------------------------
+To see all available resources associated with the CC1350, click on [this link](http://dev.ti.com/tirex/#/All?link=TI-RTOS%20for%20CC13XX%20and%20CC26XX%2FDevelopment%20Tools%2FCC1350-LAUNCHXL) to filter out all the incompatible projects and collateral.
+
+Available in resource explorer are code examples using TI-RTOS CC13xx/CC26xx SDK, documentation, Software Developers Guide and links to wiki articles and more.
+
+Feel free to navigate the available resources to jump-start your development.
+
+Additional Tools
+----------------
+[CCS Cloud IDE](http://dev.ti.com/ide): Develop your code right in the cloud. Use this tool to import, modify and program code examples for your LaunchPad.
+
+Click CCS Project Import Icon anywhere in TI Resource Explorer to import that project into Cloud IDE.
+
+Cloud IDE will be automatically started with that project to get your started with development. `my.ti.com` login is required for use of Cloud IDE.
+
+[Booster Pack checker](http://dev.ti.com/bpchecker): Verify whether Booster Packs What's This are compatible with your LaunchPad.
+
+
+
+</xmp>
+
+<link rel="stylesheet" href="../../web_support/highlight/styles/zenburn.css"/>
+<script src="../../web_support/strapdown/vendor/jquery-1.11.2.min.js"></script>
+<script src="../../web_support/strapdown/vendor/bootstrap.min.js"></script>
+<script src="../../web_support/highlight/highlight.pack.js"></script>
+<script src="../../web_support/strapdown/v/0.2/strapdown.js"></script>
+
+</html>

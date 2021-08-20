@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectSpec>
+    <project
+        title="i2c_light_sensor_tirtos"
+        name="i2c_light_sensor_tirtos"
+        device="CC2650F128"
+        endianness="little"
+		connection="common/targetdb/connections/TIXDS110_Connection.xml"
+        toolChain="TI"
+        linkerCommandFile=""
+        compilerBuildOptions="-mv7M3 --code_state=16 --abi=eabi -me -g --gcc --c99 --gen_func_subsections=on  --display_error_number --diag_warning=255 --diag_wrap=off
+		-DCC26XXWARE
+		-I${CC26XXWARE}
+		-I${workspace_loc:/${ProjName}}
+		-IC:/ti/scs_academy/i2c_light_sensor/source
+		"
+
+		linkerBuildOptions="
+		-l${CC26XXWARE}/driverlib/bin/ccs/driverlib.lib -x
+		"
+        description="I2C Light Sensor (TI-RTOS)"
+        launchWizard="false">
+
+        <property name="type" value="rtsc"/>
+		<property name="products" value="com.ti.rtsc.TIRTOSCC13XX_CC26XX:2.20.1.08"/>
+        <property name="xdcToolsVersion" value="3.32.00.06"/>
+        <property name="target" value="ti.targets.arm.elf.M3"/>
+        <property name="platform" value="ti.platforms.simplelink:CC2650F128"/>
+        <property name="buildProfile" value="release"/>
+        <property name="isHybrid" value="true"/>
+        <property name="configuroOptions" value="--compileOptions &quot;${COMPILER_FLAGS} &quot; "/>
+
+        <pathVariable name="EXT_TI_PRODUCTS_DIR" path="../../../../../" scope="project"></pathVariable>
+		<pathVariable name="IMPORT_PATH" path="${EXT_TI_PRODUCTS_DIR}/scs_academy/i2c_light_sensor/projects/ccs_tirtos" scope="project"></pathVariable>
+        <pathVariable name="CC26XXWARE" path="${EXT_TI_PRODUCTS_DIR}/tirtos_cc13xx_cc26xx_2_20_01_08/products/cc26xxware_2_24_02_17393" scope="project"></pathVariable>
+        <pathVariable name="TI_RTOS_DRIVERS_BASE" path="${EXT_TI_PRODUCTS_DIR}/tirtos_cc13xx_cc26xx_2_20_01_08/products/tidrivers_cc13xx_cc26xx_2_20_01_10/packages" scope="project"></pathVariable>
+
+
+        <file path="IMPORT_PATH/rom.cfg" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./Setup" createVirtualFolders="true">
+        </file>
+    	<file path="../readMe.txt" openOnCreation="true" excludeFromBuild="false" action="link" targetDirectory="./Setup" createVirtualFolders="true">
+        </file>
+        <file path="IMPORT_PATH/../../source/scif.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./Driver">
+        </file>
+		<file path="IMPORT_PATH/../../source/scif.h" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./Driver">
+        </file>
+        <file path="IMPORT_PATH/../../source/scif_framework.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./Driver">
+        </file>
+		<file path="IMPORT_PATH/../../source/scif_framework.h" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./Driver">
+        </file>
+		<file path="IMPORT_PATH/../../source/scif_osal_tirtos.h" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./Driver">
+        </file>
+        <file path="IMPORT_PATH/../../source/main_tirtos.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./Main">
+		</file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650STK/ccfg.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="." createVirtualFolders="true">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650STK/CC2650STK.c" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory=".">
+        </file>
+		 <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650STK/CC2650STK.cmd" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory=".">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650STK/CC2650STK.h" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory=".">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650STK/Board.h" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory=".">
+        </file>
+
+    </project>
+</projectSpec>

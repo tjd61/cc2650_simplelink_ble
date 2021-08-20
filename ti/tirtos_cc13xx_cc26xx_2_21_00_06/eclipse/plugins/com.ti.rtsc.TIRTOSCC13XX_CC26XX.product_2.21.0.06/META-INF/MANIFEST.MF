@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.he
+ lp,org.eclipse.rtsc.xdctools.ui;resolution:=optional
+Bundle-Vendor: Texas Instruments
+Eclipse-LazyStart: true
+Bundle-Version: 2.21.0.06
+Bundle-Name: TI-RTOS for CC13XX and CC26XX Embedded Runtime Content
+Bundle-Localization: plugin
+Bundle-ManifestVersion: 2
+Bundle-Activator: org.eclipse.rtsc.xdctools.ui.cdt.CCSActivator;resolu
+ tion:=optional
+Created-By: 1.6.0_37 (Sun Microsystems Inc.)
+Bundle-SymbolicName: com.ti.rtsc.TIRTOSCC13XX_CC26XX.product_2.21.0.06
+ ;singleton:=true
+
+Name: plugin.xml
+SHA1-Digest: 8e4v7iOV//Rsg91dpWL8dd0VvBQ=
+

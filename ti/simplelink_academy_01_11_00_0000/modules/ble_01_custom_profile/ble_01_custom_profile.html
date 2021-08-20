@@ -1,0 +1,2216 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bluetooth Low Energy Custom Profile</title>
+</head>
+
+<xmp theme="united2" style="display:none;" class="col-xs-6">
+
+Introduction
+==================================
+
+We will create a new custom (or proprietary, as it's called) profile and in the process learn the difficult parts of the GATT- and ATT protocols that are used for data exchange between BLE devices.
+
+This tutorial will take about 2-3 hours to complete and requires very little knowledge except some basic familiarity with embedded programming (see more details in Prerequisites).
+
+First, the basic concepts will be described, and then how the `TI BLE SDK` is used to implement a custom service. We will then define our own custom profile ( the sunlight profile ) and modify the application source code in the `ProjectZero` project to include the required services and modify the behavior according to our own specification.
+
+Prerequisites
+==================================
+
+### Other trainings
+*  Completion of BLE Basics
+
+### Software
+* CCS 6.1.3+
+* TI BLE SDK 2.2.1 (http://www.ti.com/ble-stack)
+* TI-RTOS 2.20.01.08 or later
+    * Note that a compatible version of TI-RTOS is bundled with the BLE SDK installer.
+* TI BLE Device Monitor (http://www.ti.com/lit/zip/swrc258)
+
+[[r! Compiler Support
+The BLE-Stack v 2.2.1 SDK release has been built and tested with TI ARM Compiler `v5.2.6`. Compatibly with other TI ARM Compiler versions in CCS has not been tested and use of other compiler versions may result in undefined behavior. Refer to Section 2.6.3.2 of the [BLE Software Developer's Guide (SWRU393)](http://www.ti.com/lit/pdf/swru393) for the procedure to install TI ARM Compiler `v5.2.6`.
+]]
+
+### Hardware alternatives
+
+* CC2650 Launchpad
+* CC2650ST SensorTag + DEVPACK-DEBUG
+* SmartRF06 Evaluation board + CC2650EM-7ID
+
+
+ATT and GATT Introduction
+==================================
+
+For Bluetooth Low Energy, communication occurs over the air according to the `Attribute Protocol (ATT)`. From a BLE application point of view however, data is exchanged using the `Generic Attribute Protocol (GATT)` which can be viewed as a meta-layer on top of `ATT`. [Bluetooth SIG] has defined several `Profiles` for the use of these protocols to ensure interoperability.
+
+A `Profile` is a written document (or a cryptic voicemail) describing how a number of `GATT Services` and `GATT Characteristics` (defined separately from the `Profile`) should be used to achieve a certain application. These will be briefly described below.
+
+
+Attribute
+-----------------
+An Attribute is the smallest addressable unit of data used by `ATT` and `GATT`. It is addressed via a 16-bit handle, it has a type, which is an UUID that can be 16, 32 or 128 bits long, and it has a data field which can be up to 512 bytes long. Note that all 32-bit UUIDs should be converted to 128-bit before sending over the `ATT` protocol.
+
+Summarized, the Attribute Protocol defines an attribute to consist of
+* Handle &ndash; The 'address' of the Attribute when accessed via the Attribute Protocol
+* UUID &ndash; The 'type' of the Attribute
+* Value &ndash; Array of bytes interpreted differently depending on the UUID (type).
+
+Handle       | UUID             | Value
+-------------|------------------|--------------------
+   16 bits   |  16 or 128 bits  | 1 to 512 bytes.
+
+[[b Length and MTU
+Even though the max length of an attribute value is logically 512 bytes, the `Maximum Transmission Unit (MTU)` size for ATT can be lower - minimum 27 bytes, not accounting for L2CAP and ATT command header. If the length exceeds this, a `GATT ReadLongCharValue` or `GATT WriteLongCharValue`, which splits the data up, must be performed.
+]]
+
+Characteristic
+-----------------
+
+Several of these attributes are needed to define a `Characteristic`. A `Characteristic` always consists of a at least `Value` attribute, where you in your `Profile` have decided what the value means, and a `Declaration`. The `Declaration` always comes before the value attribute and describes whether the value attribute can be read or written, contains the UUID of the Characteristic and the `handle` of the `Characteristic Value`'s attribute.
+
+Other attributes of a characteristic can give a description of the characteristic in string format, or describe how the `Value` should be interpreted, or configure whether the `GATT Server` may send `Notifications` about value changes. These are called `Descriptors`.
+
+[[d-question-sign Quiz
+
+Which statement is true?
+
+[quiz]
+v A Characteristic consists of at least a Declaration and a Value attribute
+x The Attribute Protocol defines what a Service and Characteristic is
+x A Profile describes the Attributes in a Service
+[quiz]
+]]
+
+### Example Characteristic
+A peer device can only address attributes via their handles and can in fact only operate over the air on attributes. There is no concept of services or characteristics in the radio protocol, only attributes.
+
+The hierarchy of `Service` &rarr; `Characteristic` &rarr; `Value` is simply meta-data derived from the attribute values and UUIDs. Hence the names `Attribute Protocol (ATT)` which is the over-the-air protocol and `Generic Attribute Protocol (GATT)` which is layered on top.
+
+An example of a characteristic as seen 'over the air' in the form of two attributes is shown below:
+
+Handle  | UUID     | Value              |  What
+--------|----------|--------------------|---------
+   ..   |   ...    | ....               |    ....
+   [31]{Handles are assigned dynamically and are used over the air to address attributes.}   |  [0x2803]{Type of attribute. Tells you how to interpret the value. 0x2803 means that this attribute is a Characteristic Declaration}  | [02]{Mask of access properties for this Characteristic. Explained further down.}:[20:00]{Handle of Characteristic Value. `20:00` is `0x0020` which is 32. See next attribute.}:[AA:BB]{UUID/Type of the Characteristic. `AA:BB` -> `0xBBAA`. See Type of next attribute.}     |  [Characteristic Declaration]{See the table below for an explanation of the Value of this type of attribute.}
+   32   |  [0xBBAA]{Type of attribute. If this was `0x2A6E` you would know that the `Value` of this attribute should be interpreted as Temperature formatted as sint16. Right here the Type is 0xBBAA, which is just randomly chosen.}  | [41:42:43]{This is the actual value of the Characteristic. Could be anything you want, but a `Profile` will typically dictate the content for a given `UUID` or `Type`.}           |  Characteristic Value
+   33   |  0x2803  | 02:22:00:AA:CC     |  Characteristic Declaration
+   34   |  0xCCAA  | 15                 |  Characteristic Value
+
+#### Handle
+In the TI BLE Stack the handles are assigned starting from 1 when the attribute is registered with the GATT Server. If the firmware doesn't change, the handle is always the same.
+
+#### UUID
+{{b>
+Proprietary (non-SIG-adopted) services must use 128-bit UUIDs to avoid collision, unless a 16- or 32-bit UUID is aquired from the SIG.
+}}
+
+The `UUID` tells a peer device how the value of the Attribute should be interpreted. For example, `0x2803` is defined in the specification to mean Characteristic Declaration, and `0xBBAA` is something made up for this example.
+
+
+#### Attribute Value
+As described above, the value of an attribute can be up to 512 bytes long, and is given meaning by the UUID of the attribute.
+
+##### Example Characteristic Declaration
+The value of the Characteristic Declaration attribute with handle 31 above is interpreted like this:
+
+Byte(s) | Definition               | Value  | Meaning
+--------|--------------------------|--------|----------
+    0   | Char Value Permissions   |  02    |  Permit Read on Characteristic Value
+   1-2  | Char Value's ATT handle  |  20:00 |  0x0020 = 32, as seen above
+   3-n  | Characteristic UUID      |  AA:BB |  0xBBAA
+
+##### Example Characteristic Value
+For the attribute value `41:42:43` of the `Characteristic Value` attribute it is up to us to define how the value is interpreted, because it's not defined by the Bluetooth SIG. As an ASCII-string it would be 'ABC'.
+
+[[b Characteristic Value
+The attribute with handle 32 above gets the moniker `Characteristic Value` because the `Characteristic Declaration` says **the actual useful value** of the characteristic can be found at handle 32, and because its `UUID` matches the `UUID` found in the `Characteristic Declaration`.
+]]
+
+### Client Characteristic Configuration Descriptor
+The name of this descriptor type is perhaps not very poetic. Often abbreviated to `CCCD`, the descriptor is an attribute with the UUID `0x2902` and is readable and writable.
+
+The value a GATT Client writes to this attribute will determine whether the GATT Server is allowed to send `Notifications` (if `0x0001` is written) or `Indications` (if `0x0002` is written).
+
+
+
+
+### Discovery
+You will notice that the UUID in the attribute value for the Characteristic Declaration, and the UUID of the attribute for the Characteristic Value is identical.
+
+Handle  | UUID       | Value
+--------|------------|--------------------
+   31   |  0x2803    | 02:20:00:`AA:BB`
+   32   |  `0xBBAA`  | 41:42:43
+
+This is not coincidental. The GATT protocol specifies that a peer device should be able to discover all the services and characteristics by just looking for attributes with the UUID `0x2800` for Primary Service Declarations and `0x2803` for Characteristic Declarations and use the values of these attributes (just metadata) to know the capabilites of the device.
+
+
+[[d-question-sign Quiz
+The Attribute Protocol is a meta-layer on top of the Generic Attribute Protocol.
+
+[quiz]
+x> Yes it is --> No, unfortunately. GATT uses the Type field of an ATT Attribute to impose a hierarchy of Services and Characteristics.
+v> No, of course not
+[quiz]
+
+Characteristics are used to build Attributes
+
+[quiz]
+v> No, it's opposite
+x> Indeed they are --> A Characteristic is defined by at least two separate ATT Attributes - Declaration and Value attributes.
+[quiz]
+
+The interpretation of an Attribute's value-field depends on that attribute's
+
+[quiz]
+x> Handle --> The handle is just an 'address' for an attribute.
+v> UUID/Type
+x> Characteristic declaration --> A characteristic declaration is an ATT Attribute with Type 0x2803 and whose ATT Value field gives information about the Characteristic's actual Char Value attribute.
+[quiz]
+
+]]
+
+Service and Profile
+-----------------
+
+A `Service` is a collection of characteristics. A `Profile` defines a collection of one or more services and define how services can be used to enable an application or use case. A precise description of GATT, Services, attributes, etc and how they are related to each other can be found on [SIG GATT Overview]. You can also read more about [Bluetooth Interoperability and Profiles].
+
+An example of a service that uses the above characteristic and one more is found below
+
+[[b> What's in a service?
+Every attribute from the declaration of a service until the declaration of another service, ordered by attribute handle, is a member of the service.
+]]
+
+Handle  | UUID     | Value
+--------|----------|--------------------
+   30   |  0x2800  | AA:AA
+   31   |  0x2803  | 02:20:00:AA:BB
+   32   |  0xBBAA  | 41:42:43
+   33   |  0x2803  | 02:22:00:DC:AC
+   34   |  0xACDC  | 4C:41:53:45:52
+
+If we were a peer device, we would now know that the Service `0xAAAA` exists in the GATT Server, and it contains the readable characteristic `0xBBAA` at handle 32 with the value `41:42:43`.
+
+A `Profile` could for example tell us that 0xAAAA means `AcronymService` and 0xBBAA is a `RandomAcronymString` with no NULL terminator that is always 3 characters long. It could also tell us that 0xACDC means `LaserAcronym`, a `Characteristic` which `Characteristic Value` always reads as the string 'LASER'.
+
+Knowing this, we can make the table above more understandable.
+
+Handle  | UUID     | Value              |  What
+--------|----------|--------------------|---------
+   30   |  0x2800  | AA:AA              | AcronymService declaration
+   31   |  0x2803  | 02:20:00:AA:BB     | RandomAcronymString declaration
+   32   |  0xBBAA  | 41:42:43           | Always 3 letters, no NULL. Readable.
+   33   |  0x2803  | 02:22:00:DC:AC     | LaserAcronym declaration
+   34   |  0xACDC  | 4C:41:53:45:52     | Always LASER. Readable.
+
+[[b Tool metadata
+When you make a custom service, tools like BTool and Device Monitor don't know what the UUIDs represent since they're just made up. Edit `<BTool_Install>\BToolGattUuid.xml` or `<DevMon_Install>\config\gatt_uuid.xml` to add your own profile.
+]]
+
+
+
+
+Implementation of a Service
+==================================
+The central element in a service is the `Attribute Table`, which is a one to one representation in code of the tables seen above.
+
+When registering a service with the `GATT Server`, a pointer to the array of attributes is given, and this is interpreted and finalized by the GATT Server. Notice below that we find again `handle`, `UUID/type` and `value` from above.
+
+
+
+Attribute Struct
+---------------
+
+```c
+/**
+ * GATT Attribute format.
+ */
+typedef struct attAttribute_t
+{
+  gattAttrType_t type; //!< Attribute type (2 or 16 octet UUIDs)
+  uint8 permissions;   //!< Attribute permissions
+  uint16 handle;       //!< Attribute handle - assigned internally by attribute server
+  uint8* const pValue; //!< Attribute value - encoding of the octet array is defined in
+                       //!< the applicable profile. The maximum length of an attribute
+                       //!< value shall be 512 octets.
+} gattAttribute_t;
+``` **Attribute Entry (gatt.h)** &ndash; Permissions is not visible externally, but is a signal to the GATT Server.
+
+There are some things to keep in mind when initializing an attribute entry in the attribute table:
+* The UUID is a complex structure
+  * Length of UUID (`ATT_BT_UUID_SIZE` which is 16-bit or `ATT_UUID_SIZE` which is 128-bit)
+  * A pointer to UUID character array of that length.
+* Handle is not initialized by the user, but left as 0.
+* The value is not stored in the attribute table, merely a pointer to the variable holding the value.
+* Permissions tells the GATT Server what requests can be let through to the Service's callbacks.
+
+
+[[y Characteristic Value Properties
+The Characteristic Value Properties found in the Characteristic Declaration must match the permissions of the Characteristic Value's attribute entry, and will let the peer device know what operations can be done on the Characteristic Value attribute, since it can't know the internal permissions of the attribute.
+
+For example, the value of `simpleProfileChar1Props` below is `GATT_PROP_READ | GATT_PROP_WRITE` &rarr; `0x0A` which matches `GATT_PERMIT_READ | GATT_PERMIT_WRITE`. The list of these defines is found in the BLE Basics training, and in `gattservapp.h` (for props) and `gatt.h` (for permissions).
+]]
+
+
+
+Attribute table
+--------------
+
+When used in an attribute table, like for the SimpleGATTProfile included in the SimpleBLEPeripheral sample application, it looks like this:
+
+```c
+/* See the code boxes further down to see how the variables in this array are defined. */
+
+static gattAttribute_t simpleProfileAttrTbl[] =
+{
+  // Simple Profile Service
+  {
+    { ATT_BT_UUID_SIZE, primaryServiceUUID }, /* type */
+    GATT_PERMIT_READ,                         /* permissions */
+    0,                                        /* handle */
+    (uint8 *)&simpleProfileService            /* pValue */
+  },
+
+    // Characteristic 1 Declaration
+    {
+      { ATT_BT_UUID_SIZE, characterUUID },
+      GATT_PERMIT_READ,
+      0,
+      &simpleProfileChar1Props
+    },
+
+      // Characteristic Value 1
+      {
+        { ATT_BT_UUID_SIZE, simpleProfilechar1UUID },
+        GATT_PERMIT_READ | GATT_PERMIT_WRITE,
+        0,
+        &simpleProfileChar1
+      },
+``` **Attribute Table** &ndash; Service- and Characteristic Declaration and Characteristic Value
+
+A somewhat simplified graphic representation can be seen here. The orange bits correspond to the fields in the struct shown above called **Attribute Entry**.
+
+![Attribute table](resources/attr_table_graphic.png)
+
+
+The code snippet above is in turn translated to what we are familar with from above, when read over the air.
+
+
+Handle  | UUID                                  | Value                                         |  What
+--------|----------                             |--------------------                           |---------
+   30   |  0x2800<br>`primaryServiceUUID`       | F0:FF<br>`simpleProfileService`               | SimpleProfileService Declaration. Readable.
+   31   |  0x2803<br>`characterUUID`            | 0A:20:00:F1:FF<br>`simpleProfileChar1Props`   | 'Characteristic 1' Declaration. Readable.
+   32   |  0xFFF1<br>`simpleProfilechar1UUID`   | 01<br>`simpleProfileChar1`                    | 'Char 1' Value Attribute. Readable/Writable.
+
+
+The variables `primaryServiceUUID` and `characterUUID` are defined in `gatt_uuid.c` along with other BT SIG defined GATT-related UUIDs such as various descriptor types.
+
+The other variables such as service and characteristic UUIDs and characteristic values and properties must be defined by the service.
+
+
+
+Attribute variables
+----------------------------
+
+As an overview, these are the variables needed to initialize the attribute table seen above. These can be found in `simpleGATTprofile.h` and `simpleGATTprofile.c` under `Profiles/` in the SimpleBLEPeripheral project in the BLE SDK.
+
+### Service Declaration
+The Service Declaration is typically a four-stage rocket:
+* The UUID is placed in a `#define`
+* The `#define` is used to initialize an array of 2 or 16 bytes
+* The array with the UUID is pointed to by a `gattAttrType_t` struct which contains the length of the array and a pointer to the array
+* The `gattAttrType_t` struct is pointed to by the `attribute table`
+
+
+```c
+// Simple Profile Service UUID
+#define SIMPLEPROFILE_SERV_UUID             0xFFF0
+
+// Simple GATT Profile Service UUID: 0xFFF0
+CONST uint8 simpleProfileServUUID[ATT_BT_UUID_SIZE] =
+{
+  LO_UINT16(SIMPLEPROFILE_SERV_UUID), HI_UINT16(SIMPLEPROFILE_SERV_UUID)
+};
+
+// Simple Profile Service attribute
+static CONST gattAttrType_t simpleProfileService = { ATT_BT_UUID_SIZE, simpleProfileServUUID };
+``` **Service Declaration Variables** &ndash; *simpleProfileService* is inserted into the attribute table and points to the UUID.
+
+
+[[d-question-sign Quiz
+Where in the attribute table will a peer device find the Service UUID? Look at the code and table in the previous section before answering.
+
+[quiz]
+x> Service Declaration attribute's UUID --> The UUID of the GATT Service Declaration attribute is 0x2800. This is how you know what the value means. Hint: The Value of a 0x2800 attribute is the Service UUID.
+v> Service Declaration attribute's Value
+[quiz]
+]]
+
+
+
+### Characteristic Declaration and Value
+Similar to the Service Declaration, the Characteristic's UUID is also defined in a header file, and inserted into an array.
+
+Dissimilarly, the Characteristic UUID is not inserted into the Characteristic Declaration's Value by the user. Instead, it is pointed to directly from the attribute table, and the GATT Server takes care of initializing the `handle` and `characteristic UUID` of the declaration.
+
+The value is simply pointed to - but any access to the variable needs to know its length, as this is typically done via a pointer to the value.
+
+```c
+// Characteristic UUID
+#define SIMPLEPROFILE_CHAR1_UUID            0xFFF1
+
+// Characteristic 1 UUID: 0xFFF1
+CONST uint8 simpleProfilechar1UUID[ATT_BT_UUID_SIZE] =
+{
+  LO_UINT16(SIMPLEPROFILE_CHAR1_UUID), HI_UINT16(SIMPLEPROFILE_CHAR1_UUID)
+};
+
+// Simple Profile Characteristic 1 Properties
+static uint8 simpleProfileChar1Props = GATT_PROP_READ | GATT_PROP_WRITE;
+
+// Characteristic 1 Value
+static uint8 simpleProfileChar1 = 0;
+
+// Client Characteristic Configuration example - not part of SimpleGATTProfile.
+static gattCharCfg_t *simpleProfileChar1CharConfig;
+
+``` Characteristic Declaration and Value variables
+
+[[d-question-sign Quiz
+Where in the attribute table will a peer device find the Characteristic UUID? Look at the code and table in the previous section before answering.
+
+[quiz_multi]
+v Characteristic Declaration attribute's Value
+v Characteristic Value attribute's UUID
+[quiz_multi]
+
+In which Attribute's field is the *actual* data-value of the Characteristic found by a peer device? Found as `simpleProfileChar1` above.
+
+[quiz]
+x Characteristic Declaration attribute's Value --> The value of the characteristic declaration attribute is meta-data about the Characteristic Value; its access properties, handle and UUID.
+v Characteristic Value attribute's Value
+x Characteristic Value attribute's Type --> The Type field is the UUID of the value attribute, not the value itself.
+[quiz]
+]]
+
+
+
+Application Interface
+---------------------------
+The attribute table and the value variables is the data structure for your new GATT Service. For your application to use the data, the service must implement some minimal API for the application thread to interact with it.
+
+Typically, you will want to at least
+* Add the attribute table to the GATT Server in the stack, so the service is exposed to peers, and requests are routed to your service.
+* Set and Get the values written to and read from the service by peer devices.
+* Execute a callback handler in the application when data is written to your service so you don't have to continuously call the Getter from the application.
+
+### AddService
+The first thing that has to happen is that an application thread that is registered with ICall needs to call the service's init routine - typically called `SomeProfile_AddService(..)`.
+
+```c
+bStatus_t SimpleProfile_AddService( uint32 services )
+{
+  uint8 status;
+
+  // Allocate Client Characteristic Configuration table
+  simpleProfileChar4Config = (gattCharCfg_t *)ICall_malloc( sizeof(gattCharCfg_t) *
+                                                            linkDBNumConns );
+  if ( simpleProfileChar4Config == NULL )
+  {
+    return ( bleMemAllocError );
+  }
+
+  // Initialize Client Characteristic Configuration attributes
+  GATTServApp_InitCharCfg( INVALID_CONNHANDLE, simpleProfileChar4Config );
+
+  if ( services & SIMPLEPROFILE_SERVICE )
+  {
+    // Register GATT attribute list and CBs with GATT Server App
+    status = GATTServApp_RegisterService( simpleProfileAttrTbl,
+                                          GATT_NUM_ATTRS( simpleProfileAttrTbl ),
+                                          &simpleProfileCBs );
+  }
+  else
+  {
+    status = SUCCESS;
+  }
+
+  return ( status );
+}
+``` **Initializing a Service** &ndash; Allocate+init `CCCD` and tell GATT Server about attribute table.
+
+The above example is from the Simple GATT Service example mentioned earlier.
+
+Because Characteristic 4 is declared with the NOTIFY property and has a Client Characteristic Configuration descriptor attached, the value variable for that descriptor's attribute must be set up. The default state is that notification and indication is disabled until a Client writes to the descriptor.
+
+The other thing that happens here is that the GATT Server is told about
+1. Where to find the attribute table,
+2. How many attributes it contains, and
+3. Which callbacks it should call when a client tries to Read or Write over the air.
+
+The callbacks are the entry points for the GATT Server when it wants data from or has data for your Service, and is defined like this:
+
+```c
+// Simple Profile Service Callbacks
+CONST gattServiceCBs_t simpleProfileCBs =
+{
+  simpleProfile_ReadAttrCB,  // Read callback function pointer
+  simpleProfile_WriteAttrCB, // Write callback function pointer
+  NULL                       // Authorization callback function pointer
+};
+``` **GATT Service callbacks** &ndash; Implemented by the service to handle read-, write- and authorization request.
+
+You will notice that this (`gattServiceCBs_t`) is a callback structure defined by the GATT Server, and your service simply provides an instance of this structure pointing to your handlers. We will get back to the implementation of these further down.
+
+
+
+### Application callbacks
+When something is done to the Service over the air, the GATT Server will as mentioned above invoke the callback handlers given to `GATTServApp_RegisterService`. But how do you tell the application that something has changed in the service?
+
+Enter: The application callback. The Service can call this when data is received.
+
+```c
+// Callback when a characteristic value has changed
+typedef void (*simpleProfileChange_t)( uint8 paramID );
+
+typedef struct
+{
+  simpleProfileChange_t        pfnSimpleProfileChange;  // Called when characteristic value changes
+} simpleProfileCBs_t;
+``` **Definition of application callback** &ndash; Example use below
+
+This is absolutely and completely application dependent. If you would like to also tell the application if somebody has read a value, or you would like to *not* notify the application about something changing, feel free to change this or leave it out completely.
+
+```c
+// Signature of the callback function in the application.
+static void SimpleBLEPeripheral_charValueChangeCB(uint8_t paramID);
+
+
+// Simple GATT Profile Callbacks
+static simpleProfileCBs_t simpleBLEPeripheral_simpleProfileCBs =
+{
+  SimpleBLEPeripheral_charValueChangeCB // Characteristic value change callback
+};
+
+// Registering the callback during application init looks like this.
+SimpleProfile_RegisterAppCBs(&simpleBLEPeripheral_simpleProfileCBs);
+
+// Implementation of the callback function in the application.
+static void SimpleBLEPeripheral_charValueChangeCB(uint8_t paramID)
+{
+  // Check paramID, call GetParameter to get data, then act on it
+
+  // Note: This executes in the Stack Task's context!
+  //       That means no BLE APIs are available. It also means
+  //       that you should not spend any significant processing time here.
+}
+``` **Using the application callback** &ndash; This how it looks from the application.
+
+Similar to the GATT callbacks to the service, the application declares an instance of the `simpleProfileCBs_t` callback structure pointing to the callback handler, and gives this to the `RegisterAppCBs` function when the service is initialized.
+
+It's important to note here that the callback to the application is typically invoked by the Service when it has received a callback from the GATT Server. This means that the RTOS Task context when executing the `_charValueChangeCB` for example is the Stack Task's context with the Stack Task's priority.
+
+Typically you would want to do as little as possible in the callback handler because of this, so that critical Bluetooth Stack procedures are not delayed. The example application does nothing except send a message to the application's TI-RTOS Queue about which parameter changed. The application task can call the Service's `GetParameter` in its own context later and act on it.
+
+[[y Receiving a stream
+If you are expecting a stream coming in from a peer device, it is recommended to immediately also copy the contents of the written data into a message to the application by using `GetParameter` in the application callback.
+
+Otherwise new data may be received and placed in the Service's variables before the application task has the time to call `GetParameter` in its own context.
+]]
+
+### Set/GetParameter
+These are Setters and Getters for the data present in the Characterisic Value attributes. For example:
+
+```c
+bStatus_t SimpleProfile_SetParameter( uint8 param, uint8 len, void *value )
+{
+  bStatus_t ret = SUCCESS;
+  switch ( param )
+  {
+    case SIMPLEPROFILE_CHAR1:
+      if ( len == sizeof ( uint8 ) )
+      {
+        simpleProfileChar1 = *((uint8*)value);
+      }
+      else
+      {
+        ret = bleInvalidRange;
+      }
+      break;
+``` **SetParameter example** &ndash; The `case`s are indexes defined by the service.
+
+The only thing going on here is that the length is checked (further validation can be added) and `simpleProfileChar1` is updated with a new value.
+
+Remember that a pointer to `simpleProfileChar1` is in the attribute table, so when a `Read Request` is received from a peer device, that value will be read out and sent over the air.
+
+The `SetParameter` can also serve as an interface for sending out notifications if these are enabled.
+
+```c
+case SIMPLEPROFILE_CHAR4:
+  if ( len == sizeof ( uint8 ) )
+  {
+    simpleProfileChar4 = *((uint8*)value);
+
+    // See if Notification has been enabled
+    GATTServApp_ProcessCharCfg( simpleProfileChar4Config, &simpleProfileChar4, FALSE,
+                                simpleProfileAttrTbl, GATT_NUM_ATTRS( simpleProfileAttrTbl ),
+                                INVALID_TASK_ID, simpleProfile_ReadAttrCB );
+``` **Update and Notify** &ndash; The value is updated, and a notification is transmitted if enabled.
+
+The interesting parts in the above are:
+- `simpleProfileChar4` is updated with a new value
+- `GATTServApp_ProcessCharCfg` is told where to find the CCCD value (`simpleProfileChar4Config`) to check if notification is allowed by a Client.
+- It is also told how to perform a Read of `simpleProfileChar4` as if it were the GATT Server.
+  - Pointer to the Characteristic Value: `simpleProfileChar4`
+  - Whether an authenticated link is required.
+  - What's the attribute table, and how big is it?
+  - If the characteristic is enabled for Indication, which task should receive the Confirmation.
+  - What's the stack's interface to read this characteristic (`simpleProfile_ReadAttrCB`).
+
+If notifications or indications are enabled, `simpleProfile_ReadAttrCB` will be called to collect the data that will be transmitted.
+
+If this seems like a roundabout way of doing things, it is, but it ensures that you don't need to worry about whether you're allowed by the Client to send data, you don't need to know the dynamic handle of the value, and you don't need to format the `ATT Notification` packet manually.
+
+For streaming applications however, it is recommended to manually implement the procedures performed by `GATTServApp_ProcessCharCfg` in order to correctly process the return value from the stack to avoid data loss.
+
+
+
+
+GATT Server Callbacks
+---------------------------
+After the attribute table is registered in the GATT Server, it will be exposed to connecting GATT Clients. When values are read and written by a GATT Client, the GATT Server will route those requests to the registered callbacks.
+
+
+### Read callback
+
+The Read callback is called as the GATT Server is processing the incoming message, in the Task context of the Stack thread, and is called with some parameters
+
+Parameter  |  Description
+-----------|----------------
+***pAttr** |  Pointer to the attribute with the requested value (e.g. `simpleProfileChar1`) for your convenience
+***pValue**|  Pointer to where the read response payload should be copied by the callback.
+***pLen**  | Pointer you modify with the length of the data you have copied into `*pValue`
+**maxLen** |  The maximum length you're allowed to copy into `*pValue` (ATT MTU size dependent)
+**offset** |  If it's a Long Read (because MTU &lt; value length) the peer can request the read starts at an offset into the value.
+**connHandle** | If more than one peer is connected, this is the handle of the requesting peer, should you wish to differentiate responses.
+**method** |  You can return `blePending` from the callback, and based on the `method` create your own ATT Rsp within 30 seconds.
+
+A minimal working callback, given that all characteristics are 3 bytes long looks like this:
+
+```c
+static bStatus_t myService_ReadAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                           uint8 *pValue, uint8 *pLen, uint16 offset,
+                                           uint8 maxLen, uint8 method )
+{
+  *pLen = 3;                                // maxLen is always 20 or higher
+  memcpy(pValue, pAttr->pValue, *pLen);     // We've made all the value variables at least 3 bytes long.
+  return SUCCESS;                           // Tell the GATT Server to send the response from *pValue.
+}
+``` ** Minimal working read callback **
+
+[[d-question-sign Quiz
+
+What happens in the minimal example if an attribute is requested to be read which does not have read permissions?
+
+[quiz]
+x> Security risk --> The GATT Server in the Stack evaluates the permissions before calling the services' callbacks.
+v> GATT Server will reject before callback
+[quiz]
+
+Considering `Characteristic 1` from earlier, what would `pAttr->type.uuid` be if this read callback is called because a peer wants to read the `Characteristic Value` of that Characteristic?
+
+[quiz]
+v> Array of 0xF1, 0xFF --> This evaluates to 0xFFF1 which is the UUID of the attribute the peer device wants to read.
+x> ATT_UUID_SIZE       --> This is a define for '2', and is the length in bytes of a 16-bit UUID. This is also provided via pAttr->type, but in pAttr->type.len.
+x> Array of 0x03, 0x28 --> This is 0x2803 when interpreted as a 16-bit integer, which would indicate the peer device wants to read the value of a characteristic declaration. Such reads are handled by the GATT server and not your service.
+[quiz]
+
+If a `Read` request is sent by a peer device, which attribute's value can be sent as a response by myService_ReadAttrCB?
+
+[quiz]
+x> All attributes --> No, meta-attributes such as Service and Characteristic Declarations are responded to by the stack without your involvement.
+x> Descriptor and Value attributes --> Trick question - You get write callbacks for descriptors, but not read callbacks.
+v> Value attributes
+[quiz]
+
+In the table in the section <a href="#attribute-table">Attribute table</a>, what is the handle of the Value attribute of that characteristic?
+
+[quiz]
+x> 30 --> This is the Service Declaration.
+x> 31 --> This is the Characteristic Declaration. It always comes before (lower handle value) a Characteristic Value attribute.
+v> 32
+[quiz]
+
+]]
+
+Usually it makes sense to respond differently depending on which attribute is requested. Below is a generic pattern that should work for most cases regardless of attribute UUID length, attribute value length and Attribute Protocol MTU size.
+
+```c
+static bStatus_t myService_ReadAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                       uint8 *pValue, uint8 *pLen, uint16 offset,
+                                       uint8 maxLen, uint8 method )
+{
+  bStatus_t status = SUCCESS;
+
+  // See if request is regarding the Cool Characteristic Value
+  if ( ! memcmp(pAttr->type.uuid, myCoolCharUuid, pAttr->type.len) )
+  {
+    if ( offset > MYCOOLCHAR_LEN )  // Prevent malicious ATT ReadBlob offsets.
+    {
+      status = ATT_ERR_INVALID_OFFSET;
+    }
+    else
+    {
+      *pLen = MIN(maxLen, MYCOOLCHAR_LEN - offset);  // Transmit as much as possible
+      memcpy(pValue, pAttr->pValue + offset, *pLen);
+    }
+  }
+  // See if request is regarding some other char value.
+  else if ( ! memcmp(...) )
+  {
+     ...
+  }
+  else
+  {
+    // If we get here, that means you've forgotten to add an if clause for a
+    // characteristic value attribute in the attribute table that has READ permissions.
+    *pLen = 0;
+    status = ATT_ERR_ATTR_NOT_FOUND;
+  }
+
+  return status;
+}
+``` ** Generic read callback ** - An alternative is to build a 16-bit UUID from parts of the requested UUID and do a switch-case.
+
+
+
+[[d-question-sign Quiz
+1. [What's `memcmp`?]{Two arrays are compared byte for byte.}
+[What's compared?]{The *requested* UUID is compared to one or several of the UUIDs of the characteristics in your service.}
+[What's the compare length?]{The length is the length of the *requested* UUID, already found by the GATT Server and pointed to by pAttr.}
+
+2. [What would happen if you had an attribute with a 16-bit UUID equal to the beginning of an 128-bit UUID used by another attribute?]{With this implementation, since the length of the requested UUID is used, the if-clauses would match whichever UUID *started* with the requested UUID.}
+]]
+
+
+### Write callback
+
+Similar to the read callback, this callback is also called from from the GATT Server in the Stack Task context.
+
+
+Parameter  |  Description
+-----------|----------------
+***pAttr** |  Pointer to the attribute with the requested value (e.g. `simpleProfileChar1`) provided for your convenience
+***pValue**|  Pointer to received data.
+**len**    |  Length of received data pointed to by `*pValue`
+**offset** |  If it's a Long Write (because MTU &lt; value length) the peer can request the write starts at an offset into the value.
+**connHandle** | If more than one peer is connected, this is the handle of the requesting peer, should you wish to differentiate responses.
+**method** |  You can return `blePending` from the callback, and based on the `method` create your own ATT Rsp within 30 seconds.
+
+Again, you could imagine a minimal functional callback
+
+```c
+static bStatus_t myService_WriteAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                        uint8 *pValue, uint8 len, uint16 offset,
+                                        uint8 method )
+{
+  // Copy pValue into the variable we point to from the attribute table.
+  memcpy(pAttr->pValue, pValue, len);
+  return SUCCESS;
+}
+``` **Minimal write callback**: Received data is copied to the memory location of [**pAttr->pValue**]{Points to for example `simpleProfileChar1` via the attribute table} in its [entirety]{Because `len` is the length as received over the air. This may be longer than the memory you have allocated to store the data.}.
+
+However, for the write callback, there are some more considerations
+1. It's not safe to rely on the length of the received data, although buffer overflow attacks can be fun.
+2. If there's a `CCCD` in the attribute table, writes to this will be routed here and must be taken care of
+3. For writes it would make sense to tell the application that the data has changed.
+
+A more generic write callback could look like this:
+
+```c
+static bStatus_t myService_WriteAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                        uint8 *pValue, uint8 len, uint16 offset,
+                                        uint8 method )
+{
+  bStatus_t status  = SUCCESS;
+  uint8_t   paramID = 0xFF;
+
+  // See if request is regarding a Client Characterisic Configuration
+  if ( ! memcmp(pAttr->type.uuid, clientCharCfgUUID, pAttr->type.len) )
+  {
+    // Allow both notifications and indication.
+    status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len,
+                                             offset, GATT_CLIENT_CFG_NOTIFY |
+                                             GATT_CLIENT_CFG_INDICATE );
+  }
+  // See if request is regarding the Cool Characteristic Value
+  else if ( ! memcmp(pAttr->type.uuid, myCoolCharUuid, pAttr->type.len) )
+  {
+    if ( offset + len > MYCOOLCHAR_LEN )
+    {
+      status = ATT_ERR_INVALID_OFFSET;
+    }
+    else
+    {
+      // Copy pValue into the variable we point to from the attribute table.
+      memcpy(pAttr->pValue + offset, pValue, len);
+
+      // Only notify application if entire expected value is written
+      if ( offset + len == MYCOOLCHAR_LEN)
+        paramID = MYSERVICE_MYCOOLCHAR;
+    }
+  }
+  // See if request is regarding some other char value.
+  else if ( ! memcmp(...) )
+  {
+     ...
+  }
+  else
+  {
+    // If we get here, that means you've forgotten to add an if clause for a
+    // characteristic value attribute in the attribute table that has WRITE permissions.
+    status = ATT_ERR_ATTR_NOT_FOUND;
+  }
+
+  // Let the application know something changed (if it did) by using the
+  // callback it registered earlier (if it did).
+  if (paramID != 0xFF)
+    if ( pAppCBs && pAppCBs->pfnChangeCb )
+      pAppCBs->pfnChangeCb( paramID ); // Call app function from stack task context.
+
+  return status;
+}
+``` **Generic write callback** &ndash; Looks daunting, but is mostly copy/paste.
+
+
+Task 1 &ndash; Create the files
+==================================
+
+[[b! Training solution
+The solution to these exercises are contained within the example's `Application` directory. You can simply copy and paste the contents of the solution files into their associated files.
+
+Solution files for sunlightService.c and sunlightService.h are named `sunlightService_soln.c` and `sunlightService_soln.h`. Those 2 files are generated with the <a href="#example-service-generator">Example service generator</a> provided in this training module.
+
+Solution file for project_zero.c is named `project_zero_soln.c`. You can find the added code by searching for `SOLUTION` in the `project_zero_soln.c`. Most of the added code in project_zero_soln.c will not be needed until Task 4. For the changes that are not in-line in the existing code, the added functions are at the end of the file.
+
+]]
+
+First we have to create the files that will implement our new service.
+
+1. Scroll down to the <a href="#example-service-generator">Example service generator</a> and generate the shell for your service
+  * Service name &ndash; sunlightService
+  * Service UUID &ndash; 0xBA55
+    * Expand to 128-bit not selected
+
+
+2. Open the `ProjectZero` App and Stack project as done in the `BLE Basics` lab.
+
+3. The `App` project can be renamed to for example `SunlightPeripheralApp`. It will still refer to the same stack project (which can be shared)
+
+4. Right click on the `Application/` folder and choose New &rarr; File. Call this file `sunlightService.h`.
+
+5. Paste in the generate content.
+
+6. Repeat for `sunlightService.c`
+
+7. Compile the project.
+<!-- Trigger the modal with a button -->
+<!--a href="#" data-toggle="modal" data-target="#myVideoModal">Show video</a-->
+
+<!-- Modal -->
+<!--div id="myVideoModal" class="modal" role="dialog">
+  <div class="modal-dialog"-->
+    <!-- Modal content-->
+    <!--div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Create new file in CSS Desktop</h4>
+      </div>
+      <div class="modal-body">
+          <video controls>
+            <source src="newServiceCCS.mp4" type="video/mp4">
+            <source src="newServiceCCS.webm" type="video/webm">
+          </video>
+      </div>
+    </div>
+  </div>
+</div-->
+
+
+Task 2 &ndash; Register the service and verify
+==================================
+Now you have an empty shell for your service which on a should compile cleanly. Now it's time to add your new service to the GATT Server.
+
+You will notice that the <a href="#application-usage-snippets">Application usage snippets</a> section contains some code fragments that can be used in the application task to do this.
+
+1. Open the file `Application/project_zero.c` in the editor
+2. Near the top of the file, locate the `#include` directives
+3. Add an include directive for your service header file
+4. Locate the service initialization segment of `ProjectZero_init()`
+5. Insert your `SunlightService_AddService();` there.
+6. Build your project and download to the device
+7. Connect to your device and look at the attribute table. Can you find your service listed?
+
+
+Task 3 &ndash; Add a Characteristic
+==================================
+
+At this stage, when the GATT Server knows where to read the attribute table of your service, any change to the table is reflected in what a remote client sees when it performs a service and characteristic discovery.
+
+You will now add a characteristic called `sunlightValue` to your attribute table. The characteristic should have the UUID `0x2BAD` and be **readable** and able to send **notifications**. You will also implement the handling of read requests, the API for the application to set a value, and the mechanism for sending notifications if this is enabled by the GATT Client. The value should be 4 bytes long.
+
+[[d-question-sign Quiz
+
+What attributes must be added to the atribute table to accomplish this? Select multiple.
+
+[quiz_multi]
+v> Characteristic Declaration --> Every characteristic needs a declaration attribute.
+x> Characteristic User Description --> This is not necessary, but can be added.
+v> Characteristic Value --> In order to read notify your user data you need a Characteristic Value Attribute.
+x> Service Declaration --> No separate Service Declaration is needed for this service, as one already exists for SunlightService.
+v> Client Configuration Descriptor --> In order to enable notifications a peer device must have a `CCCD` associated with your characteristic that it can write to.
+[quiz_multi]
+
+What must the permissions for the Characteristic Value attribute be?
+
+[quiz_multi]
+x> GATT_PERMIT_WRITE --> If you permit write, the GATT Server will call your WriteAttrCB on write requests. If your characteristic isn't writeable, that just wastes time.
+v> GATT_PERMIT_READ
+[quiz_multi]
+
+
+What must the properties - visible to a GATT Client - be?
+
+[quiz_multi]
+x> GATT_PROP_WRITE --> If PROP_WRITE is set, a peer device will assume the characteristic is writeable. Which it isn't supposed to be.
+x> GATT_PROP_WRITE_NO_RSP --> If PROP_WRITE_NO_RSP is set, a peer device will assume the characteristic is writeable. Which it isn't supposed to be.
+v> GATT_PROP_READ
+v> GATT_PROP_NOTIFY
+[quiz_multi]
+]]
+
+In this task we will only add the characteristic to the attribute table and verify that it is discovered remotely.
+
+There are two ways you can solve this. Either skip down to the <a href="#example-service-generator">Example service generator</a> and play around with adding a service, noting the changes your settings have on the output and copy the hopefully correct snippets into your service, or refer to the description and examples in the <a href="#implementation-of-a-service">Implementation of a Service</a> section above and do it manually.
+
+The only thing not described above is how a `Client Characterisic Configuration Descriptor` attribute looks.
+* UUID is stored in a common variable: `clientCharCfgUUID`. Length of this is 16 bits.
+* It has Read and Write permissions
+* The attribute value entry points to a uint8_t casted `(uint8_t *)&YourConfigVariable` pointer.
+* It should be placed as the next attribute after the Characteristic Value attribute.
+
+Reads to this are handled by the GATT Server, and writes must be handled by the service's Write-callback. In the generated service shell, the write to a CCCD is handled.
+
+However, to avoid writing to NULL (causes an exception), you must also add allocation and initialization of the CCCD variable. Refer to the <a href="#addservice">AddService</a> section for an example.
+
+
+1. Add Characteristic Declaration attribute and necessary variables and defines.
+2. Add Characteristic Value attribute and necessary variables and defines.
+3. Add Client Characterisic Configuration Descriptor attribute and necessary variables and initialization.
+4. Connect and do a service discovery. It should looke something like the below, if service UUID is 16-bit and characteristic UUID 128-bit.
+
+![Task 3](resources/task3_with_char.png)
+
+[[d-question-sign Quiz
+
+Considering the code for the service implementation, why is 0x2BAD in the middle of a long string of hexadecimal numbers in the picture above, and which statements are true below?
+
+[quiz_multi]
+v It's expanded from 16- to 128-bit as a matter of convenience.
+v An arbitrary 128-bit string of numbers can be used instead of expanding a 16-bit value.
+v It's placed inside TI_BASE_UUID_128, a predefined macro for expansion to 128-bit.
+x All proprietary services and characteristics must be 128-bit. --> 16- and 32-bit proprietary UUIDs can be reserved and purchased from Bluetooth SIG.
+v Shorter UUIDs can be bought from the BT SIG for use with proprietary services.
+[quiz_multi]
+
+<br/>
+
+Try to read your attribute. [What happens?]{Assuming you have followed the instructions to the letter, you will have received an error message} [Why?]{To find this out, consider the `ReadCB` in your service. How does it respond?}
+]]
+
+
+Task 4 &ndash; Add API and Callback handling
+==================================
+
+Now you have exposed a service with a characteristic to the world via the GATT Server, and you have tied remote actions on this service to callbacks in your implementation.
+
+As you observed in the last task, you don't yet get any data when you try to read your characteristic. That will change now.
+
+1. See <a href="#gatt-server-callbacks">GATT Server Callbacks</a>
+2. In `sunlightService_ReadAttrCB` in your code, insert an if-clause that compares the requested UUID with the UUID of your characteristic.
+  * For now, disregard the Notification aspect, and don't call `GATTServApp_ProcessCharCfg(..)` when updating the value.
+3. Optionally, inside the if-clause, set `*pLen` equal to 4, or follow the generic pattern
+4. Copy the value of `pAttr->pValue` into `pValue`. The length is 4, or optionally following the generic pattern and using the `#define` you have made for the length.
+  * What does `pAttr` point to? What is the data type? What about `pAttr->pValue`?
+5. Connect and try to read the characteristic. What is the value?
+6. Change the initial value of the Characteristic Value attribute's value field. Re-flash and try to read it again.
+
+Now you have only static data, but what you really want is for your application to update the characteristic data.
+1. See <a href="#set-getparameter">Set/GetParameter</a>
+2. In your service, add a case to `SunlightService_SetParameter(..)` which accepts a value of 4 bytes and updates the Characterisic Value attribute's value field.
+  * That means update the variable pointed to in the attribute table. You may have named this `sunlightService_SunlightValueVal`.
+  * The `param` is an index you have defined in the service's header file. In the text it's called `SUNLIGHTSERVICE_SUNLIGHTVALUE` and has the value `0`.
+3. In your application, after you have added your service, add a call to `SunlightService_SetParameter(YOUR_PARAM_IDX, YOUR_LENGTH, &yourFourByteArrayWithSomeValue);`
+4. Connect and read your characteristic. Does it match the value you set it to?
+
+
+Task 5 &ndash; Update and send some data
+==================================
+
+In this task you will add an attempt to send a notification to the connected GATT Client every time you update the value of the SunlightValue characteristic. You will also update the SunlightValue whenever a button is pressed.
+
+1. See <a href="#gatt-server-callbacks">GATT Server Callbacks</a>, the code example Update and Notify and the explanation.
+2. In `SunlightService_SetParameter(..)` in the case you added for the SunlightValue characteristic, add a call to `GATTServApp_ProcessCharCfg(..)` and fill in the parameters as explained, but referring to your service and your data.
+3. In the application task, find `user_handleButtonPress` and add a call to your SetParameter function in the case for Board_BUTTON0 (or BUTTON1, your choice).
+  * Since 32-bit variables are 4 bytes long, you can give a pointer to a 32-bit variable to the SetParameter function.
+4. The value you set should be increased by 1 every time the button is pressed.
+5. Connect, enable notifications and press the button.
+
+
+Task 6 &ndash; Bonus: Make the update periodic
+==================================
+
+Here you will add a TI-RTOS clock object, configure it, start it, and create a Swi handler and a Task context handler. In a real world application, this is maybe where you would read your sensor value and update the attribute value.
+
+Since this workshop is about the BLE SDK and not TI-RTOS, the clock part will be explained in some detail below.
+
+Adding and initializing a clock
+---------------
+
+You first need to include `ti/sysbios/knl/Clock.h` and add a global `Clock_Struct myClock` variable. A Clock is set up to have either a periodic timeout or to be one-shot. When it expires it will call the callback function you specified when it was set up.
+
+To set it up, at some point before it's to be used you need to do something like this:
+
+```c
+  // clockParams is only used during init and can be on the stack.
+  Clock_Params clockParams;
+  // Insert default params
+  Clock_Params_init(&clockParams);
+  // Set a period, so it times out periodically without jitter
+  clockParams.period = 5000 * (1000/Clock_tickPeriod), // 5000 ms, conversion from ms to clock ticks.
+  // Initialize the clock object / Clock_Struct previously added globally.
+  Clock_construct(&myClock, myClockSwiFxn,
+                  0, // Initial delay before first timeout
+                  &clockParams);
+``` Initialization of a TI-RTOS clock.
+
+As you probably noticed, the `Clock_construct` call takes a callback function as argument. In this case we're telling the Clock interface that there's a callback with the name `myClockSwiFxn` that it should call whenever this clock object times out.
+
+The signature of this parameter is `typedef Void (*Clock_FuncPtr)(UArg);` which means the callback function must be a `void` function which takes an `UArg` argument, which is really `uintptr_t` if you want to keep to `stdint.h` types.
+
+```c
+void myClockSwiFxn(uintptr_t arg0)
+{
+  // Can't call blocking TI-RTOS calls or BLE APIs from here.
+  // .. Send a message to the Task that something is afoot.
+  user_enqueueRawAppMsg(APP_MSG_PERIODIC_TIMER, NULL, 0); // Not sending any data here, just a signal
+}
+``` Example clock swi
+
+In the above, `APP_MSG_PERIODIC_TIMER` doesn't exist yet, and must be added to the enum `app_msg_types_t` defined near the top of `project_zero.c`. When this is added, the code will compile, but nothing will really happen because the function `user_processApplicationMessage` doesn't know what to do about `APP_MSG_PERIODIC_TIMER` messages and will ignore them.
+
+All that remains now is to add the handling of the timeout message, and at some point also start the timer by calling `Clock_start(Clock_handle(&myClock));`.
+
+* Add handling that increments a global variable and updates the characteristic value like in the previous task.
+
+Bonus squared: Reconfigure the timeout value
+------------------------------
+
+* Add another characteristic which is writable and readable and accepts 2 bytes (16-bit).
+* Call this characteristic `updatePeriod`.
+* Add write and read GATT-callback handling.
+* Add registration of application callbacks.
+* Add a YourService_GetParameter case in the service so the application can get the value that's written.
+* Make a callback to the application when the `updatePeriod` is written to.
+* Change the period of the clock. See `Clock_setPeriod`
+  * It is not recommended to do processing in the callback, since it runs in the BLE Stack's Task context, but for this example it doesn't matter.
+  * Note: Calling BLE Stack APIs (`ICallBleAPI.c`) from the context of this callback (stack thread) will never work.
+
+Again, because this isn't really about TI-RTOS, see below how to change the period.
+
+```c
+  uint32_t myTimeoutInMs; // Place received period value here
+  Clock_stop(Clock_handle(&myClock));
+  Clock_setPeriod(myTimeoutInMs * (1000/Clock_tickPeriod));
+  Clock_start(Clock_handle(&myClock));
+``` Reconfiguring the clock period
+
+The `Clock` APIs above can be called from any context.
+
+Example service generator
+==================================
+
+[[b! Bluetooth Developer Studio
+
+This generator is a light version of a plugin for [Bluetooth Developer Studio]. Download the TI plugin at [BDS Plugins].
+
+See the workshop about [Bluetooth Developer Studio](../ble_01_bds/ble_01_bds.html) for how to use that tool.
+]]
+
+[[y! Difference to ProjectZero
+
+Note that the output from the generator on this page does not match the implementation of the services and application in ProjectZero exactly, but they can coexist easily.
+
+**Similarities to ProjectZero**
+* Application callback handler immediately sends a message to the application which contains the incoming data.
+
+**Differences from ProjectZero**
+* No log statements
+* No callback for Noti/Ind enable
+* Application callback handler is unique per service
+* Separate application message queue for service messages.
+* Signature (parameters) of callback handler does not contain pointer to the received data.
+]]
+
+[[r! A Note About Syntax
+Please use good C programming practices when selecting a characteristic and service name using the service generator. If there are spaces or otherwise forbidden C syntax, you will experience build errors.
+]]
+
+<form class="form-horizontal" id="serviceGen">
+  <fieldset>
+    <legend>Service</legend>
+
+    <div class="form-group form-group-xs row">
+      <div class="row">
+        <div class="col-md-6">
+          <label class="col-lg-6 control-label">Service name</label>
+          <div class="col-lg-6">
+            <input type="text" class="form-control input-sm" name="service[name]" placeholder="camelCase is best for generation" value="myService">
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="col-lg-6 control-label">Service UUID</label>
+          <div class="col-lg-6">
+            <input type="text" class="form-control input-sm" name="service[uuid]" placeholder="0xBABE (16-bit)" value="0xBABE">
+
+              <div class="radio">
+                <label>
+                  <input type="radio" name="service[uuid_size]" value="ATT_BT_UUID_SIZE" checked> 16-bit
+                </label>
+                <label>
+                  <input type="radio" name="service[uuid_size]" value="ATT_UUID_SIZE"> 128-bit
+                </label>
+              </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="form-characteristics">
+    <!-- Characteristic entries will be inserted here on button press -->
+    </div>
+
+    <div class="form-group">
+        <div class="col-lg-6">
+          <button type="button" class="btn" onclick="g_CharIdx = addFormChar(g_CharIdx);">Add Characteristic</button>
+          <button type="button" class="btn btn-primary" onclick="btn_Generate()">Generate</button>
+        </div>
+        <div class="col-lg-6 col-lg-offset-2">
+          <label>
+            <input type="checkbox" name="fluff" value="true" checked> Include comments and #includes in output.
+          </label>
+        </div>
+    </div>
+  </fieldset>
+</form>
+
+<pre id="jsonOut" style="display:hidden"></pre>
+
+Generated Header File
+----------------------
+The content which is output below is a header file for the generated service. It defines the UUIDs for the service and its characteristics, and the API for the service. It must be #included in code files which wants to use the service APIs.
+
+<div style="display:inline-block">
+<div style="display:block">
+<button type="button" class="btn btn-xs btn-warning float-right" style="margin: 0; position: relative;" onclick="SelectText('genOut_h')">Select text</button></div>
+<div class="pre-container"><pre><code id="genOut_h" class="lang-c">//C Output</code></pre><span class="code-title"><b>Header file</b></span></div></div>
+
+Generated Implementation File
+----------------------
+<div style="display:inline-block">
+<div style="display:block">
+<button type="button" class="btn btn-xs btn-warning float-right" style="margin: 0; position: relative;" onclick="SelectText('genOut_c')">Select text</button></div>
+<div class="pre-container"><pre><code id="genOut_c" class="lang-c">//C Output</code></pre><span class="code-title"><b>Service implementation</b></span></div></div>
+
+Application usage snippets
+----------------------
+<div style="display:inline-block">
+<div style="display:block">
+<button type="button" class="btn btn-xs btn-warning float-right" style="margin: 0; position: relative;" onclick="SelectText('genOut_app')">Select text</button></div>
+<div class="pre-container"><pre><code id="genOut_app" class="lang-c">//C Output</code></pre><span class="code-title"><b>Application snippets</b></span></div></div>
+
+
+References
+==================================
+[Bluetooth SIG]
+
+[SIG GATT Profiles Overview]
+
+[Bluetooth Interoperability and Profiles]
+
+[Bluetooth Developer Studio]
+
+[BDS Plugins]
+
+<!-- Actual references -->
+[Bluetooth SIG]: https://developer.bluetooth.org/AboutUs/Pages/default.aspx
+
+[SIG GATT Profiles Overview]: https://developer.bluetooth.org/TechnologyOverview/Pages/Profiles.aspx#GATT
+
+[SIG GATT Overview]: https://developer.bluetooth.org/TechnologyOverview/Pages/GATT.aspx
+
+[Bluetooth Interoperability and Profiles]: https://developer.bluetooth.org/DevelopmentResources/Pages/Custom-Profile-Development.aspx
+
+[Bluetooth Developer Studio]: https://www.bluetooth.com/~/media/developer-studio/index
+
+[BDS Plugins]: https://www.bluetooth.com/develop-with-bluetooth/developer-resources-tools/bluetooth-developer-plugins
+
+</xmp>
+
+
+<link rel="stylesheet" href="../../web_support/highlight/styles/zenburn.css"/>
+<script src="../../web_support/strapdown/vendor/jquery-1.11.2.min.js"></script>
+<script src="../../web_support/strapdown/vendor/bootstrap.min.js"></script>
+<script src="../../web_support/highlight/highlight.pack.js"></script>
+<script src="../../web_support/strapdown/v/0.2/strapdown.js"></script>
+<script src="../../web_support/serialize-object/jquery.serialize-object.min.js"></script>
+<script src="../../web_support/liquid/liquid.js"></script>
+
+
+
+
+
+
+
+
+
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ######################### Code Generation things ##################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+
+
+
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!--                              TEMPLATES                                 -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+
+
+<!-- ###################################################################### -->
+<!--                 Form Entry for Characteristic                          -->
+<!-- ###################################################################### -->
+<script id="liquid-form-characteristic-template" type="text/liquid">
+      <div id="characteristic-{{charIdx}}">
+        <legend>Characteristic #{{charIdx}} <button type="button" class="btn btn-xs btn-warning float-right" style="margin: 0; position: relative;"onclick="$('#characteristic-{{charIdx}}')[0].remove();">Remove</button></legend>
+        <input type="hidden" name="service[chars][{{charIdx}}][idx]" value="{{charIdx}}">
+        <div class="form-group row">
+          <div class="row">
+            <div class="col-md-4">
+              <label class="col-lg-6 control-label">Char name</label>
+              <div class="col-lg-6">
+                <input type="text" class="form-control input-sm" name="service[chars][{{charIdx}}][name]" placeholder="camelCase" value="myNiceChar">
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="col-lg-6 control-label">Char UUID</label>
+              <div class="col-lg-6">
+                <input type="text" class="form-control input-sm" name="service[chars][{{charIdx}}][uuid]" placeholder="0xBEEF" value="0xBEEF">
+
+                <div class="radio">
+                  <label>
+                    <input type="radio" name="service[chars][{{charIdx}}][uuid_size]" value="ATT_BT_UUID_SIZE"> 16-bit
+                  </label>
+                  <label>
+                    <input type="radio" name="service[chars][{{charIdx}}][uuid_size]" value="ATT_UUID_SIZE" checked> 128-bit
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="col-lg-6 control-label">Value len (bytes)</label>
+              <div class="col-lg-6">
+                <input type="text" class="form-control input-sm" name="service[chars][{{charIdx}}][len]" placeholder="1" value="1">
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <label class="col-lg-6 control-label">Properties (shown in declaration)</label>
+              <div class="col-lg-6">
+                <select multiple="" class="form-control input-sm" name="service[chars][{{charIdx}}][properties][]">
+                  <option>GATT_PROP_READ</option>
+                  <option>GATT_PROP_WRITE</option>
+                  <option>GATT_PROP_WRITE_NO_RSP</option>
+                  <option>GATT_PROP_NOTIFY</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="col-lg-6 control-label">Permissions (for ATT requests)</label>
+              <div class="col-lg-6">
+                  <select multiple="" class="form-control input-sm" name="service[chars][{{charIdx}}][permissions][]">
+                  <option>GATT_PERMIT_READ</option>
+                  <option>GATT_PERMIT_WRITE</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</script>
+
+
+
+
+<!-- ###################################################################### -->
+<!--               Header file for the generated Service                    -->
+<!-- ###################################################################### -->
+<script id="liquid-template-h" type="text/liquid">{% if fluff -%}/**********************************************************************************************
+ * Filename:       {{service.name}}.h
+ *
+ * Description:    This file contains the {{service.name}} service definitions and
+ *                 prototypes.
+ *
+ * Copyright (c) 2015-2016, Texas Instruments Incorporated
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *************************************************************************************************/
+
+
+#ifndef _{{ service.name | upcase }}_H_
+#define _{{ service.name | upcase }}_H_
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+/*********************************************************************
+ * INCLUDES
+ */
+
+/*********************************************************************
+ * CONSTANTS
+ */
+
+/*********************************************************************
+* CONSTANTS
+*/
+{% endif -%}// Service UUID
+#define {{ service.name | upcase }}_SERV_UUID {{service.uuid}}
+
+{% for char in service.chars -%}
+// {{name}} Characteristic defines
+#define {{ service.name | upcase }}_{{ char.name | upcase }}      {{ char.idx }}
+#define {{ service.name | upcase }}_{{ char.name | upcase }}_UUID {{ char.uuid }}
+#define {{ service.name | upcase }}_{{ char.name | upcase }}_LEN  {{ char.len }}
+
+{% endfor -%}
+{% if fluff -%}
+/*********************************************************************
+ * TYPEDEFS
+ */
+
+/*********************************************************************
+ * MACROS
+ */
+
+/*********************************************************************
+ * Profile Callbacks
+ */
+
+{% endif -%}// Callback when a characteristic value has changed
+typedef void (*{{service.name}}Change_t)( uint8 paramID );
+
+typedef struct
+{
+  {{service.name}}Change_t        pfnChangeCb;  // Called when characteristic value changes
+} {{service.name}}CBs_t;
+
+{% if fluff -%}
+
+
+/*********************************************************************
+ * API FUNCTIONS
+ */
+
+
+/*
+ * {{ service.nameCap }}_AddService- Initializes the {{ service.nameCap }} service by registering
+ *          GATT attributes with the GATT server.
+ *
+ */
+{% endif -%}extern bStatus_t {{ service.nameCap }}_AddService( void );
+
+{% if fluff -%}/*
+ * {{ service.nameCap }}_RegisterAppCBs - Registers the application callback function.
+ *                    Only call this function once.
+ *
+ *    appCallbacks - pointer to application callbacks.
+ */
+{% endif -%}extern bStatus_t {{ service.nameCap }}_RegisterAppCBs( {{service.name}}CBs_t *appCallbacks );
+
+{% if fluff -%}/*
+ * {{ service.nameCap }}_SetParameter - Set a {{ service.nameCap }} parameter.
+ *
+ *    param - Profile parameter ID
+ *    len - length of data to right
+ *    value - pointer to data to write.  This is dependent on
+ *          the parameter ID and WILL be cast to the appropriate
+ *          data type (example: data type of uint16 will be cast to
+ *          uint16 pointer).
+ */
+{% endif -%}extern bStatus_t {{ service.nameCap }}_SetParameter( uint8 param, uint8 len, void *value );
+
+{% if fluff -%}/*
+ * {{ service.nameCap }}_GetParameter - Get a {{ service.nameCap }} parameter.
+ *
+ *    param - Profile parameter ID
+ *    value - pointer to data to write.  This is dependent on
+ *          the parameter ID and WILL be cast to the appropriate
+ *          data type (example: data type of uint16 will be cast to
+ *          uint16 pointer).
+ */
+{% endif -%}extern bStatus_t {{ service.nameCap }}_GetParameter( uint8 param, void *value );
+{% if fluff -%}
+
+/*********************************************************************
+*********************************************************************/
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _{{ service.name | upcase }}_H_ */{% endif -%}</script>
+
+
+
+
+
+
+
+
+
+
+<!-- ###################################################################### -->
+<!--          Implementation file for the generated Service                 -->
+<!-- ###################################################################### -->
+
+<script id="liquid-template-c" type="text/liquid">{% if fluff -%}/**********************************************************************************************
+ * Filename:       {{service.name}}.c
+ *
+ * Description:    This file contains the implementation of the service.
+ *
+ * Copyright (c) 2015-2016, Texas Instruments Incorporated
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *************************************************************************************************/
+
+
+/*********************************************************************
+ * INCLUDES
+ */
+#include <string.h>
+
+#include "bcomdef.h"
+#include "OSAL.h"
+#include "linkdb.h"
+#include "att.h"
+#include "gatt.h"
+#include "gatt_uuid.h"
+#include "gattservapp.h"
+#include "gapbondmgr.h"
+
+#include "{{service.name}}.h"
+
+/*********************************************************************
+ * MACROS
+ */
+
+/*********************************************************************
+ * CONSTANTS
+ */
+
+/*********************************************************************
+ * TYPEDEFS
+ */
+
+/*********************************************************************
+* GLOBAL VARIABLES
+*/
+
+{% endif -%}// {{service.name}} Service UUID
+CONST uint8_t {{service.name}}UUID[{{ service.uuid_size }}] =
+{
+{% if service.uuid_size == 'ATT_UUID_SIZE' -%}
+  TI_BASE_UUID_128({{ service.name | upcase }}_SERV_UUID)
+{% else -%}
+  LO_UINT16({{ service.name | upcase }}_SERV_UUID), HI_UINT16({{ service.name | upcase }}_SERV_UUID)
+{% endif -%}
+};
+
+{% for char in service.chars -%}
+// {{char.name}} UUID
+CONST uint8_t {{ service.name}}_{{ char.nameCap }}UUID[{{ char.uuid_size }}] =
+{
+{% if char.uuid_size == 'ATT_UUID_SIZE' -%}
+  TI_BASE_UUID_128({{ service.name | upcase }}_{{ char.name | upcase }}_UUID)
+{% else -%}
+  LO_UINT16({{ service.name | upcase }}_{{ char.name | upcase }}_UUID), HI_UINT16({{ service.name | upcase }}_{{ char.name | upcase }}_UUID)
+{% endif -%}
+};
+{% endfor -%}
+
+{% if fluff -%}/*********************************************************************
+ * LOCAL VARIABLES
+ */
+
+{% endif -%}static {{service.name}}CBs_t *pAppCBs = NULL;
+
+{% if fluff -%}/*********************************************************************
+* Profile Attributes - variables
+*/
+
+{% endif -%}// Service declaration
+static CONST gattAttrType_t {{service.name}}Decl = { {{ service.uuid_size }}, {{service.name}}UUID };
+
+{% for char in service.chars -%}
+// Characteristic "{{ char.nameCap }}" Properties (for declaration)
+static uint8_t {{ service.name}}_{{ char.nameCap }}Props = {{ char.orProps }};
+
+// Characteristic "{{ char.nameCap }}" Value variable
+static uint8_t {{ service.name}}_{{ char.nameCap }}Val[{{ service.name | upcase }}_{{ char.name | upcase }}_LEN] = {0};
+{% if char.hasCCCD -%}
+
+// Characteristic "{{ char.nameCap }}" CCCD
+static gattCharCfg_t *{{ service.name}}_{{ char.nameCap }}Config;
+{% endif -%}
+{% endfor -%}
+
+{% if fluff -%}/*********************************************************************
+* Profile Attributes - Table
+*/
+
+{% endif -%}static gattAttribute_t {{service.name}}AttrTbl[] =
+{
+  // {{service.name}} Service Declaration
+  {
+    { ATT_BT_UUID_SIZE, primaryServiceUUID },
+    GATT_PERMIT_READ,
+    0,
+    (uint8_t *)&{{service.name}}Decl
+  },
+{% for char in service.chars -%}
+    // {{ char.nameCap }} Characteristic Declaration
+    {
+      { ATT_BT_UUID_SIZE, characterUUID },
+      GATT_PERMIT_READ,
+      0,
+      &{{ service.name}}_{{ char.nameCap }}Props
+    },
+      // {{ char.nameCap }} Characteristic Value
+      {
+        { {{ char.uuid_size }}, {{ service.name}}_{{ char.nameCap }}UUID },
+        {{ char.orPerms }},
+        0,
+        {{ service.name}}_{{ char.nameCap }}Val
+      },
+{% if char.hasCCCD -%}
+      // {{ char.nameCap }} CCCD
+      {
+        { ATT_BT_UUID_SIZE, clientCharCfgUUID },
+        GATT_PERMIT_READ | GATT_PERMIT_WRITE,
+        0,
+        (uint8 *)&{{ service.name}}_{{ char.nameCap }}Config
+      },
+{% endif -%}
+{% endfor -%}
+};
+
+{% if fluff -%}/*********************************************************************
+ * LOCAL FUNCTIONS
+ */
+{% endif -%}static bStatus_t {{service.name}}_ReadAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                           uint8 *pValue, uint16 *pLen, uint16 offset,
+                                           uint16 maxLen, uint8 method );
+static bStatus_t {{service.name}}_WriteAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                            uint8 *pValue, uint16 len, uint16 offset,
+                                            uint8 method );
+
+{% if fluff -%}/*********************************************************************
+ * PROFILE CALLBACKS
+ */
+{% endif -%}// Simple Profile Service Callbacks
+CONST gattServiceCBs_t {{service.name}}CBs =
+{
+  {{service.name}}_ReadAttrCB,  // Read callback function pointer
+  {{service.name}}_WriteAttrCB, // Write callback function pointer
+  NULL                       // Authorization callback function pointer
+};
+
+{% if fluff -%}/*********************************************************************
+* PUBLIC FUNCTIONS
+*/
+
+/*
+ * {{ service.nameCap }}_AddService- Initializes the {{ service.nameCap }} service by registering
+ *          GATT attributes with the GATT server.
+ *
+ */
+{% endif -%}bStatus_t {{ service.nameCap }}_AddService( void )
+{
+  uint8_t status;
+
+{% for char in service.chars -%}
+{% if char.hasCCCD -%}
+  // Allocate Client Characteristic Configuration table
+  {{ service.name}}_{{ char.nameCap }}Config = (gattCharCfg_t *)ICall_malloc( sizeof(gattCharCfg_t) * linkDBNumConns );
+  if ( {{ service.name}}_{{ char.nameCap }}Config == NULL )
+  {
+    return ( bleMemAllocError );
+  }
+
+  // Initialize Client Characteristic Configuration attributes
+  GATTServApp_InitCharCfg( INVALID_CONNHANDLE, {{ service.name}}_{{ char.nameCap }}Config );
+{% endif -%}
+{% endfor -%}
+  // Register GATT attribute list and CBs with GATT Server App
+  status = GATTServApp_RegisterService( {{service.name}}AttrTbl,
+                                        GATT_NUM_ATTRS( {{service.name}}AttrTbl ),
+                                        GATT_MAX_ENCRYPT_KEY_SIZE,
+                                        &{{service.name}}CBs );
+
+  return ( status );
+}
+
+{% if fluff -%}/*
+ * {{ service.nameCap }}_RegisterAppCBs - Registers the application callback function.
+ *                    Only call this function once.
+ *
+ *    appCallbacks - pointer to application callbacks.
+ */
+{% endif -%}bStatus_t {{ service.nameCap }}_RegisterAppCBs( {{service.name}}CBs_t *appCallbacks )
+{
+  if ( appCallbacks )
+  {
+    pAppCBs = appCallbacks;
+
+    return ( SUCCESS );
+  }
+  else
+  {
+    return ( bleAlreadyInRequestedMode );
+  }
+}
+
+{% if fluff -%}/*
+ * {{ service.nameCap }}_SetParameter - Set a {{ service.nameCap }} parameter.
+ *
+ *    param - Profile parameter ID
+ *    len - length of data to right
+ *    value - pointer to data to write.  This is dependent on
+ *          the parameter ID and WILL be cast to the appropriate
+ *          data type (example: data type of uint16 will be cast to
+ *          uint16 pointer).
+ */
+{% endif -%}
+bStatus_t {{ service.nameCap }}_SetParameter( uint8 param, uint8 len, void *value )
+{
+  bStatus_t ret = SUCCESS;
+  switch ( param )
+  {
+{% for char in service.charsNeedRead -%}
+    case {{ service.name | upcase}}_{{ char.name | upcase }}:
+      if ( len == {{ service.name | upcase}}_{{ char.name | upcase }}_LEN )
+      {
+        memcpy({{ service.name}}_{{ char.nameCap }}Val, value, len);
+{% if char.hasCCCD -%}
+
+        // Try to send notification.
+        GATTServApp_ProcessCharCfg( {{ service.name}}_{{ char.nameCap }}Config, (uint8_t *)&{{ service.name}}_{{ char.nameCap }}Val, FALSE,
+                                    {{ service.name}}AttrTbl, GATT_NUM_ATTRS( {{ service.name}}AttrTbl ),
+                                    INVALID_TASK_ID,  {{service.name}}_ReadAttrCB);
+{% endif -%}
+      }
+      else
+      {
+        ret = bleInvalidRange;
+      }
+      break;
+
+{% endfor -%}
+    default:
+      ret = INVALIDPARAMETER;
+      break;
+  }
+  return ret;
+}
+
+
+{% if fluff -%}/*
+ * {{ service.nameCap }}_GetParameter - Get a {{ service.nameCap }} parameter.
+ *
+ *    param - Profile parameter ID
+ *    value - pointer to data to write.  This is dependent on
+ *          the parameter ID and WILL be cast to the appropriate
+ *          data type (example: data type of uint16 will be cast to
+ *          uint16 pointer).
+ */
+{% endif -%}bStatus_t {{ service.nameCap }}_GetParameter( uint8 param, void *value )
+{
+  bStatus_t ret = SUCCESS;
+  switch ( param )
+  {
+{% for char in service.charsNeedWrite -%}
+    case {{ service.name | upcase}}_{{ char.name | upcase }}:
+      memcpy(value, {{ service.name}}_{{ char.nameCap }}Val, {{ service.name | upcase}}_{{ char.name | upcase }}_LEN);
+      break;
+
+{% endfor -%}
+    default:
+      ret = INVALIDPARAMETER;
+      break;
+  }
+  return ret;
+}
+
+
+{% if fluff -%}/*********************************************************************
+ * @fn          {{service.name}}_ReadAttrCB
+ *
+ * @brief       Read an attribute.
+ *
+ * @param       connHandle - connection message was received on
+ * @param       pAttr - pointer to attribute
+ * @param       pValue - pointer to data to be read
+ * @param       pLen - length of data to be read
+ * @param       offset - offset of the first octet to be read
+ * @param       maxLen - maximum length of data to be read
+ * @param       method - type of read message
+ *
+ * @return      SUCCESS, blePending or Failure
+ */
+{% endif -%}static bStatus_t {{service.name}}_ReadAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                       uint8 *pValue, uint16 *pLen, uint16 offset,
+                                       uint16 maxLen, uint8 method )
+{
+  bStatus_t status = SUCCESS;
+
+{% for char in service.charsNeedRead -%}
+  // See if request is regarding the {{ char.nameCap }} Characteristic Value
+{% if forloop.index0 -%}else {% endif -%}if ( ! memcmp(pAttr->type.uuid, {{ service.name}}_{{ char.nameCap }}UUID, pAttr->type.len) )
+  {
+    if ( offset > {{ service.name | upcase}}_{{ char.name | upcase }}_LEN )  // Prevent malicious ATT ReadBlob offsets.
+    {
+      status = ATT_ERR_INVALID_OFFSET;
+    }
+    else
+    {
+      *pLen = MIN(maxLen, {{ service.name | upcase}}_{{ char.name | upcase }}_LEN - offset);  // Transmit as much as possible
+      memcpy(pValue, pAttr->pValue + offset, *pLen);
+    }
+  }
+{% endfor -%}
+{% if service.charsNeedRead -%}
+  else
+{% endif -%}
+  {
+    // If we get here, that means you've forgotten to add an if clause for a
+    // characteristic value attribute in the attribute table that has READ permissions.
+    *pLen = 0;
+    status = ATT_ERR_ATTR_NOT_FOUND;
+  }
+
+  return status;
+}
+
+
+{% if fluff -%}/*********************************************************************
+ * @fn      {{service.name}}_WriteAttrCB
+ *
+ * @brief   Validate attribute data prior to a write operation
+ *
+ * @param   connHandle - connection message was received on
+ * @param   pAttr - pointer to attribute
+ * @param   pValue - pointer to data to be written
+ * @param   len - length of data
+ * @param   offset - offset of the first octet to be written
+ * @param   method - type of write message
+ *
+ * @return  SUCCESS, blePending or Failure
+ */
+{% endif -%}static bStatus_t {{service.name}}_WriteAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                        uint8 *pValue, uint16 len, uint16 offset,
+                                        uint8 method )
+{
+  bStatus_t status  = SUCCESS;
+  uint8_t   paramID = 0xFF;
+
+  // See if request is regarding a Client Characterisic Configuration
+  if ( ! memcmp(pAttr->type.uuid, clientCharCfgUUID, pAttr->type.len) )
+  {
+    // Allow only notifications.
+    status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len,
+                                             offset, GATT_CLIENT_CFG_NOTIFY);
+  }
+{% for char in service.charsNeedWrite -%}
+  // See if request is regarding the {{ char.nameCap }} Characteristic Value
+  else if ( ! memcmp(pAttr->type.uuid, {{ service.name}}_{{ char.nameCap }}UUID, pAttr->type.len) )
+  {
+    if ( offset + len > {{ service.name | upcase}}_{{ char.name | upcase }}_LEN )
+    {
+      status = ATT_ERR_INVALID_OFFSET;
+    }
+    else
+    {
+      // Copy pValue into the variable we point to from the attribute table.
+      memcpy(pAttr->pValue + offset, pValue, len);
+
+      // Only notify application if entire expected value is written
+      if ( offset + len == {{ service.name | upcase}}_{{ char.name | upcase }}_LEN)
+        paramID = {{ service.name | upcase }}_{{ char.name | upcase }};
+    }
+  }
+{% endfor -%}
+  else
+  {
+    // If we get here, that means you've forgotten to add an if clause for a
+    // characteristic value attribute in the attribute table that has WRITE permissions.
+    status = ATT_ERR_ATTR_NOT_FOUND;
+  }
+
+  // Let the application know something changed (if it did) by using the
+  // callback it registered earlier (if it did).
+  if (paramID != 0xFF)
+    if ( pAppCBs && pAppCBs->pfnChangeCb )
+      pAppCBs->pfnChangeCb( paramID ); // Call app function from stack task context.
+
+  return status;
+}
+</script>
+
+
+
+
+
+
+
+<!-- ###################################################################### -->
+<!--                        Application snippets                            -->
+<!-- ###################################################################### -->
+
+<script id="liquid-template-app" type="text/liquid">{% if fluff -%}/**********************************************************************************************
+ * Filename:       appsnippets.c
+ *
+ * Description:    This file contains snippets needed to utilize the generated services.
+ *
+ * Copyright (c) 2015-2016, Texas Instruments Incorporated
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *************************************************************************************************/
+{% endif -%}
+
+//...
+#include <ti/sysbios/knl/Semaphore.h>
+#include <ti/sysbios/knl/Queue.h>
+
+//...
+{% for service in services -%}
+#include "{{service.name}}.h"
+{% endfor -%}
+
+//...
+
+{% if anyWriteable -%}
+// Semaphore globally used to post events to the application thread
+static ICall_Semaphore sem; // Already present in sample applications.
+
+// Queue object used for service messages.
+static Queue_Struct serviceMsgQ;
+static Queue_Handle hServiceMsgQ;
+
+// Struct for messages from a service
+typedef struct
+{
+  Queue_Elem _elem;
+  uint16_t svcUUID;
+  uint16_t dataLen;
+  uint8_t  paramID;
+  uint8_t  data[]; // Flexible array member, extended to malloc - sizeof(.)
+} server_char_write_t;
+{% endif -%}
+
+//...
+
+// Declaration of service callback handlers
+{% for service in services -%}
+{% if service.writeable -%}
+static void user_{{service.name}}ValueChangeCB(uint8_t paramID); // Callback from the service.
+static void user_{{service.name}}_ValueChangeDispatchHandler(server_char_write_t *pWrite); // Local handler called from the Task context of this task.
+{% else -%}
+// {{service.name}} has no writeable characteristics
+{% endif -%}
+{% endfor -%}
+
+// Service callback function implementation
+{% for service in services -%}{% if service.writeable -%}
+// {{ service.nameCap }} callback handler. The type {{service.name}}CBs_t is defined in {{service.name}}.h
+static {{service.name}}CBs_t user_{{service.name}}CBs =
+{
+  user_{{service.name}}ValueChangeCB // Characteristic value change callback handler
+};
+{% else -%}
+// {{service.name}} has no writeable characteristics.
+{% endif -%}
+{% endfor -%}
+
+
+// taskFxn_init(..)
+// {
+{% if anyWriteable -%}
+  // Initialize queue for service messages.
+  // Note: Used to transfer control to application thread
+  Queue_construct(&serviceMsgQ, NULL);
+  hServiceMsgQ = Queue_handle(&serviceMsgQ);
+{% endif -%}
+
+{% for service in services -%}
+  {{ service.nameCap }}_AddService();
+{% if service.writeable -%}
+  {{ service.nameCap }}_RegisterAppCBs(&user_{{service.name}}CBs);
+{% endif -%}
+{% endfor -%}
+
+  // Placeholder variable for characteristic intialization
+  uint8_t someVal[20] = {0};
+
+{% for service in services -%}
+  // Initalization of characteristics in {{service.name}} that are readable.
+{% for char in service.charsReadable -%}
+  {{ service.nameCap }}_SetParameter({{ service.name | upcase }}_{{ char.name | upcase }}, {{ service.name | upcase }}_{{ char.name | upcase }}_LEN, &someVal);
+{% endfor -%}
+
+{% endfor -%}
+//}
+
+
+// taskFxn(..)
+// {
+//   for (;;) {
+//     ... ICall_wait(...)   // Wait for semaphore post
+//
+{% if anyWriteable -%}
+      while (!Queue_empty(hServiceMsgQ))
+      {
+        server_char_write_t *pWrite = Queue_dequeue(hServiceMsgQ);
+
+        switch(pWrite->svcUUID)
+        {
+{% for service in services -%}
+{% if service.writeable -%}
+          case {{ service.name | upcase }}_SERV_UUID:
+            user_{{service.name}}_ValueChangeDispatchHandler(pWrite);
+            break;
+{% endif -%}
+{% endfor -%}
+        }
+
+        // Free the message received from the service callback.
+        ICall_free(pWrite);
+      }
+{% else -%}
+//   No writeable characteristics, so queue handling is not included.
+{% endif -%}
+
+//   }
+// }
+
+
+{% for service in services -%}
+{% if service.writeable -%}
+void user_{{service.name}}_ValueChangeDispatchHandler(server_char_write_t *pWrite)
+{
+  switch (pWrite->paramID)
+  {
+    {% for char in service.charsNeedWrite -%}
+    case {{ service.name | upcase }}_{{ char.name | upcase }}:
+      // Do something useful with pWrite->data here
+      // -------------------------
+      break;
+    {% endfor -%}
+  }
+
+}
+{% endif -%}
+{% endfor -%}
+
+
+{% for service in services -%}
+{% if service.writeable -%}
+static void user_{{service.name}}ValueChangeCB(uint8_t paramID)
+{
+  // See {{service.name}}.h to compare paramID with characteristic value attribute.
+  // Called in Stack Task context, so can't do processing here.
+
+  // Send message to application message queue about received data.
+  uint16_t readLen = 0; // How much to read via service API
+
+  switch (paramID)
+  {
+{% for char in service.charsNeedWrite -%}
+    case {{ service.name | upcase }}_{{ char.name | upcase }}:
+      readLen = {{ service.name | upcase }}_{{ char.name | upcase }}_LEN;
+      break;
+{% endfor -%}
+  }
+
+  // Allocate memory for the message.
+  // Note: The message doesn't have to contain the data itself, as that's stored in
+  //       a variable in the service. However, to prevent data loss if a new value is received
+  //       before GetParameter is called, we call GetParameter now.
+  server_char_write_t *pWrite = ICall_malloc(sizeof(server_char_write_t) + readLen);
+
+  if (pWrite != NULL)
+  {
+    pWrite->svcUUID = {{ service.name | upcase }}_SERV_UUID;
+    pWrite->dataLen = readLen;
+    pWrite->paramID = paramID;
+    // Get the data from the service API.
+    // Note: Fixed length is used here, but changing the GetParameter signature is not
+    //       a problem, in case variable length is needed.
+    // Note: It could be just as well to send dataLen and a pointer to the received data directly to this callback, avoiding GetParameter alltogether.
+    {{ service.nameCap }}_GetParameter( paramID, pWrite->data );
+
+    // Enqueue the message using pointer to queue node element.
+    Queue_enqueue(hServiceMsgQ, &pWrite->_elem);
+    // Let application know there's a message
+    Semaphore_post(sem);
+  }
+}
+{% endif -%}
+{% endfor -%}
+
+</script>
+
+
+
+
+
+
+
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<!--                               CODE GEN                                 -->
+<!-- ###################################################################### -->
+<!-- ###################################################################### -->
+<script>
+  // Global variables.. *sigh*
+  var firstRead = 1;
+
+  function renderCode(context) {
+    $('#genOut_h').text(Liquid.parse( $('#liquid-template-h').text() ).render(context));
+    $('#genOut_c').text(Liquid.parse( $('#liquid-template-c').text() ).render(context));
+    $('#genOut_app').text(Liquid.parse( $('#liquid-template-app').text() ).render(context));
+  }
+
+  function btn_Generate()
+  {
+    // Reset the global variable.
+    firstRead = 1;
+
+    formJson = JSON.parse($('form#serviceGen').serializeJSON());
+
+    // Make capitalized names
+    formJson.service.nameCap = formJson.service.name.charAt(0).toUpperCase() + formJson.service.name.slice(1);
+
+    // Massage characteristic objects.
+    if (formJson.service.chars)
+    {
+      // Remove empty characteristics - in case they've been removed.
+      formJson.service.chars = formJson.service.chars.filter(function(d){if (d) return true;});
+
+      // Capitalized name
+      formJson.service.chars.forEach(function(d){d.nameCap = d.name.charAt(0).toUpperCase() + d.name.slice(1);})
+
+      // Generate nice lists of properties and permissions.
+      formJson.service.chars.forEach(function(d){
+        d.orProps = d.properties?(d.properties.join(' | ')):0;
+      })
+
+      formJson.service.chars.forEach(function(d){
+        d.orPerms = d.permissions?(d.permissions.join(' | ')):0;
+      })
+
+      // Make list of characteristics that need a readcallback and SetParam.
+      formJson.service.charsNeedRead = formJson.service.chars.filter(
+        function(d){
+          return ( (d.properties && d.properties.indexOf('GATT_PROP_NOTIFY') >= 0) ||
+          (d.permissions && d.permissions.indexOf('GATT_PERMIT_READ') >= 0 ) );
+        })
+
+      // Make list of characteristics that are ATT readable.
+      formJson.service.charsReadable = formJson.service.chars.filter(
+        function(d){
+          return ( (d.properties && d.properties.indexOf('GATT_PROP_READ') >= 0) );
+        })
+
+
+      // Make list of characteristics that can be written.
+      formJson.service.charsNeedWrite = formJson.service.chars.filter(
+        function(d){
+          return ( d.permissions && d.permissions.indexOf('GATT_PERMIT_WRITE') >= 0 );
+        })
+
+      formJson.service.writeable = formJson.service.charsNeedWrite.length;
+
+      // Make list of characteristics with CCCDs
+      formJson.service.charsHaveCCCDs = formJson.service.chars.filter(
+        function(d){
+          return (d.properties && d.properties.indexOf('GATT_PROP_NOTIFY') >= 0);
+        })
+
+      // Whether the chars have CCCDs
+      if (formJson.service.chars)
+        formJson.service.chars.forEach(function(d){
+          d.hasCCCD = (d.properties && d.properties.indexOf('GATT_PROP_NOTIFY') >= 0);
+        })
+
+    }
+
+    formJson.anyWriteable = formJson.service.writeable;
+    // Pretend to have more than one service.
+    formJson.services = [formJson.service];
+
+    //document.getElementById("jsonOut").innerHTML = JSON.stringify(formJson, null, 2);
+    renderCode(formJson);
+    hljs.highlightBlock($('#genOut_c')[0]);
+    hljs.highlightBlock($('#genOut_h')[0]);
+    hljs.highlightBlock($('#genOut_app')[0]);
+  }
+
+  function addFormChar(idx)
+  {
+    var t_form_char = $('#liquid-form-characteristic-template').html();
+
+    var rendered = Liquid.parse( t_form_char ).render( {"charIdx": idx} );
+    idx++;
+
+    var form_char_out = $('#form-characteristics');
+    form_char_out.append(rendered);
+
+    return idx;
+  }
+
+  // Insert one Charactistic to begin with.
+  var g_CharIdx = 0;
+  //g_CharIdx = addFormChar(g_CharIdx);
+
+</script>
+
+
+<div align="center" style="margin-top: 4em;">
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="../../web_support/cc_license_icon.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.</div>
+
+
+</html>

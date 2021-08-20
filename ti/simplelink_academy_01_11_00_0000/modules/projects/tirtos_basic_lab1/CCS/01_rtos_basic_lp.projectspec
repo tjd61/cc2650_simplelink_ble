@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectSpec>
+    <project
+        name="TI-RTOS Lab 1 LAUNCHXL"
+        device="CC2650F128"
+        endianness="little"
+        connection="TIXDS110_Connection.xml"
+        toolChain="TI"
+        linkerCommandFile=""
+        compilerBuildOptions=" -mv7M3 --code_state=16 --abi=eabi -me -g --gcc --gen_func_subsections=on  --display_error_number --diag_warning=255 --diag_wrap=off -DCC26XXWARE -I${COM_TI_RTSC_TIRTOSCC13XX_CC26XX__CC26XXWARE} -I${PROJECT_LOC}"
+        linkerBuildOptions=" -l${COM_TI_RTSC_TIRTOSCC13XX_CC26XX__CC26XXWARE}/driverlib/bin/ccs/driverlib.lib -x"
+        description="Introduction lab"
+        launchWizard="false"
+        buildCommandFlags="-k,-j">
+
+
+        <property name="type" value="rtsc"/>
+        <property name="products" value="com.ti.rtsc.TIRTOSCC13XX_CC26XX:2.20.1.08"/>
+        <property name="xdcToolsVersion" value="3.32.00.06"/>
+        <property name="target" value="ti.targets.arm.elf.M3"/>
+        <property name="platform" value="ti.platforms.simplelink:CC2650F128"/>
+        <property name="buildProfile" value="release"/>
+        <property name="isHybrid" value="true"/>
+        <property name="configuroOptions" value="--compileOptions &quot;${COMPILER_FLAGS} &quot; "/>
+
+        <pathVariable name="CC26XXWARE" path="C:/ti/tirtos_cc13xx_cc26xx_2_20_01_08/products/cc26xxware_2_24_02_17393" scope="project"></pathVariable>
+        <pathVariable name="TI_RTOS_DRIVERS_BASE" path="C:/ti/tirtos_cc13xx_cc26xx_2_20_01_08/products/tidrivers_cc13xx_cc26xx_2_20_01_10/packages" scope="project"></pathVariable>
+
+        <file path="config/flash_debug.cfg" openOnCreation="false" excludeFromBuild="false" action="copy"  >
+        </file>
+        <file path="config/makefile.defs" openOnCreation="false" excludeFromBuild="false" action="copy"  >
+        </file>
+
+        <file path="TI_RTOS_DRIVERS_BASE/ti/drivers/PIN.h" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./PIN" createVirtualFolders="true">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/drivers/pin/PINCC26XX.h" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="./PIN" createVirtualFolders="true">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/drivers/pin/PINCC26XX.c" openOnCreation="false" excludeFromBuild="true" action="link" targetDirectory="./PIN" createVirtualFolders="true">
+        </file>
+        <file path="CC26XXWARE/linker_files/cc26x0f128.cmd" openOnCreation="false" excludeFromBuild="false" action="copy" >
+        </file>
+        <file path="CC26XXWARE/startup_files/ccfg.c" openOnCreation="" excludeFromBuild="false" action="copy">
+        </file>
+
+        <file path="../src/lab1-main.c" openOnCreation="true" excludeFromBuild="false" action="copy"  >
+        </file>
+        <file path="../src/lab1-main-solution.c" openOnCreation="true" excludeFromBuild="true" action="copy"  >
+        </file>
+
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650_LAUNCHXL/CC2650_LAUNCHXL.c" openOnCreation="" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650_LAUNCHXL/CC2650_LAUNCHXL.h" openOnCreation="" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC2650_LAUNCHXL/Board.h" openOnCreation="" excludeFromBuild="false" action="copy">
+        </file>
+
+    </project>
+</projectSpec>

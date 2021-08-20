@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Smv">
+	<item key="SessionName" value="Default"/>
+	<item key="xmlFileName" value=""/>
+	<item key="NumItems" value="2"/>
+	<item key="1" value="&lt;UiaEventConnection name=&quot;Event Transport&quot; adrs=&quot;localhost&quot; port=&quot;8080&quot; transport_type=&quot;None&quot; capture_file=&quot;null&quot; /&gt;"/>
+	<item key="2" value="&lt;UiaControlConnection name=&quot;Control &amp; Status Transport&quot; adrs=&quot;localhost&quot; port=&quot;8080&quot; transport_type=&quot;None&quot; /&gt;"/>
+</section>

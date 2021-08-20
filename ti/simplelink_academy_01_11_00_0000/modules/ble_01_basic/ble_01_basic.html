@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bluetooth Low Energy Fundamentals</title>
+</head>
+
+<xmp theme="united2" style="display:none;" class="col-xs-6">
+
+Introduction
+==================================
+
+This workshop is an introduction for the TI-RTOS based BLE-Stack for CC2640. The 7 tasks in this lab session are targeted to be completed within a 2h time frame. There should be an intermediate level of knowledge of the C programming language as well experience with embedded software development to be able to complete the tasks.
+
+The lab session targets the CC2650 Launchpad development kit, but project files are provided for CC2650 SensorTag and CC2650 Evaluation Module for SmartRF06 Evaluation Board.
+
+The first task shows how to download a project to the device and run it, and the subsequent tasks will explore the wireless BLE interface and make some small changes to the BLE application.
+
+For the latter tasks, either a Bluetooth low energy enabled cell-phone or a evaluation kit running the TI Network Processor application (HostTest) is required. The advantage of using HostTest is that the TI tools such as `BLE Device Monitor` and `BTool` can be used.
+
+It is recommended to read the [CC2640 BLE Software Developers Guide](http://www.ti.com/lit/pdf/swru393) alongside this lab for details and further information. Some references will also be made to this document.
+
+
+
+Prerequisites
+==================================
+
+### Completed material
+
+* [Project Zero getting started instructions](http://dev.ti.com/tirex/#/Device/CC2650?link=CC26xx%20Bluetooth%20Smart%2FDevelopment%20Tools%2FCC2650-LAUNCHXL%2FDocuments%2FCC2650-LAUNCHXL%20Project%20Zero) on dev.ti.com
+
+### Software for desktop development
+
+* CCS 6.1.3+
+* TI BLE SDK 2.2.1 (http://www.ti.com/ble-stack)
+* TI-RTOS 2.20.01.18 or later
+    * Note that a compatible version of TI-RTOS is bundled with the BLE SDK installer.
+* TI BLE Device Monitor (http://www.ti.com/lit/zip/swrc258)
+
+[[r! Compiler Support
+The BLE-Stack v 2.2.1 SDK release has been built and tested with TI ARM Compiler `v5.2.6`. Compatibly with other TI ARM Compiler versions in CCS has not been tested and use of other compiler versions may result in undefined behavior. Refer to Section 2.6.3.2 of the [BLE Software Developer's Guide (SWRU393)](http://www.ti.com/lit/pdf/swru393) for the procedure to install TI ARM Compiler `v5.2.6`.
+]]
+
+### Hardware alternatives
+
+* CC2650 Launchpad
+* CC2650ST SensorTag + DEVPACK-DEBUG
+* SmartRF06 Evaluation board + CC2650EM-7ID
+
+
+### Recommended reading
+
+* Chapter 1 and 2 of the BLE Software Developer's Guide
+  * Found at http://www.ti.com/lit/pdf/swru393 or in the SDK install dir under `docs`.
+
+
+Getting started &ndash; Desktop
+==================================
+
+Install the software
+---------------------------------
+
+1. Run the BLE SDK installer: `ble_sdk_2_02_01_18_setup.exe`
+
+This gives you:
+* The SDK itself at `C:\ti\simplelink\ble_sdk_2_02_01_18`
+* TI-RTOS for SimpleLink at: `C:\ti\tirtos_cc13xx_cc26xx_2_20_01_08`
+* BTool accessible via the Start Menu
+
+
+2. Run `Setup_BLE_Device_Monitor.exe` downloaded from the link above. This gives you TI BLE Device Monitor on the Start menu.
+
+
+Task 1 &ndash; Run ProjectZero project
+==================================
+The first task is to simply run the ProjectZero example project on SensorTag and verify that the hardware is working properly. This is an adaptation of the ProjectZero project for the SensorTag.
+
+
+Import in CCS Desktop
+---------------------
+
+[[b! Use Resource Explorer 'Classic' for SimpleLink Academy material
+If you are using Code Composer Studio 6.2.x it is necessary to use the 'Classic' version of Resource Explorer to view the training material and import the projects.
+![ResEx Classic](../splash/resources/resex_classic.png)
+]]
+
+Open Code Composer Studio and import the two project:
+*  Open the Resource Explorer by going to View &rarr; Resource Explorer (Examples)
+*  Open up SimpleLink Academy &rarr; Bluetooth low energy
+*  Select Projects &rarr; Project Zero  &rarr; &lt;your board&gt; App
+*  Press the import button on the right side. This should also import the ProjectZero Stack project. If not, please import that as well.
+
+![Resource Explorer](resources/import_prz.png)
+
+Once that is done, the projects are available in the Project Explorer as shown in the figure below;
+
+![Imported](resources/project_imported.png)
+
+
+Connect evaluation kit
+------------------------
+Start by making sure your kit is assembled, turned on, and is connected to the PC via the USB cable.
+
+{{y
+Depending on the SensorTag board revision it may be necessary to first connect the DevPack to the PC and then connect the SensorTag to the Devpack.
+}}
+
+
+When the either a CC2650 Launchpad or a SensorTag Debug-Devpack is connected, the Windows Device Manager (Start &rarr; Run &rarr; mmc devmgmt.msc &rarr; Ok) should show you the following devices connected:
+![Device Manager](resources/dev_mgr_xds110.PNG)
+
+The `Application/User UART` serial port is used for application output in this example.
+
+For the SmartRF06, this virtual port is called simply `USB Serial Port`. It can be identified via right-clicking, selecting properties, and verifying that Location is on a TI XDS100v3.
+
+
+Configure the debugger connection
+---------------------
+
+The correct debugger type (XDS100v3 for SmartRF06, XDS110 for SensorTag and Launchpad) is selected by default when you import the project.
+
+However, if you have more than one debugger of the same type connected, you have to manually select exactly which debugger should be used on a per-project basis.
+
+[[+b Expand instructions for manual debugger selection in CCS Desktop
+
+Follow the steps below, with only one debugger of the same type connected. The example is for XDS110, but the same applies to XDS100v3.
+
+![Debugger connection](resources/debugger_connection.png)
+
+* Open the file `targetConfigs/CC2650F128.ccxml`.
+* Change the connection to `XDS110 USB Debug Probe` if needed.
+* Click on `Target Configuration`
+
+![Debugger connection](resources/debugger_connection_serial.png)
+
+* Click on the top-level node (XDS110 USB Debug Probe)
+* Choose 'Select by serial number'
+* Start command prompt and call `c:\ti\ccs\ccs_base\common\uscif\xds110\xdsdfu.exe -e` to enumerate the connected debugger.
+
+
+[[b XDS100v3 Serial number
+
+For the XDS100v3 on the SmartRF06 board, find the serial number tool at `c:\ti\ccs\ccs_base\common\uscif\xds100serial.exe`. You cannot change the serial number with this tool. The following instructions are regarding XDS110.
+
+]]
+
+<div class="pre-container"><pre><div class="hljs"><span class="hljs-constant">C:\ti>c:\ti\ccs\ccs_base\common\uscif\xds110\xdsdfu.exe -e
+
+USB Device Firmware Upgrade Utility
+Copyright (c) 2008-2014 Texas Instruments Incorporated.  All rights reserved.
+
+Scanning USB buses for supported XDS110 devices...
+
+
+<<<< Device 0 >>>>
+
+VID: 0x0451    PID: 0xbef3
+Device Name:   XDS110 with CMSIS-DAP
+Version:       2.2.4.2
+Manufacturer:  Texas Instruments
+<span class="hljs-number">Serial Num:    0000FF01</span>
+Mode:          Runtime
+
+Found 1 device.
+
+C:\ti>
+</span></div></pre>Finding XDS110 serial number</div>
+
+
+* Insert the serial number. Above it's `0000FF01`.
+* Save the settings.
+* Test the connection.
+* Do this for both the `App` and the `Stack` projects.
+
+You can also change the serial number to something easier to remember, or in case two debuggers have the same serial number.
+
+<div class="pre-container"><pre><div class="hljs"><span class="hljs-constant">C:\ti>c:\ti\ccs\ccs_base\common\uscif\xds110\xdsdfu.exe -m
+
+USB Device Firmware Upgrade Utility
+Copyright (c) 2008-2015 Texas Instruments Incorporated.  All rights reserved.
+
+Scanning USB buses for supported XDS110 devices...
+
+
+<<<< Device 0 >>>>
+
+VID: 0x0451    PID: 0xbef3
+Device Name:   XDS110 with CMSIS-DAP
+Version:       2.2.4.2
+Manufacturer:  Texas Instruments
+Serial Num:    BADEABBA
+Mode:          Runtime
+
+Switching device into DFU mode.
+
+C:\ti>c:\ti\ccs\ccs_base\common\uscif\xds110\xds110\xdsdfu.exe -s ABCDEF01 -r
+
+USB Device Firmware Upgrade Utility
+Copyright (c) 2008-2015 Texas Instruments Incorporated.  All rights reserved.
+
+Scanning USB buses for supported XDS110 devices...
+
+Setting serial number to "ABCDEF01"...
+
+c:\ti>
+</span></div></pre>Optionally change the serial number</div>
+
++]]
+
+
+Connect a terminal program
+--------------------
+To see the serial output from the kit it is necessary to use a terminal emulator. Start this up now, when you've confirmed that the debugger connection to the device works. There are several options:
+
+* [PuTTY](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html)
+* [RealTerm](http://sourceforge.net/projects/realterm/)
+* [Windows PowerShell](https://learn.sparkfun.com/tutorials/terminal-basics/command-line-windows-mac-linux)
+* Or even just going to the command prompt and typing for example `type COM4:`.
+  * Type `help mode` to learn how to set the port parameters.
+
+
+1. Start your terminal program
+2. Choose 115200 baud as the speed, 8 bit data, 1 stop bit, no parity, no flow control.
+3. Open the serial port
+
+
+Build the projects
+-------------------
+
+Do the following;
+1.     Compile the ProjectZero project (<kbd>Ctrl + B</kbd>, the hammer icon, or via Resource Explorer)
+    *  Will automatically compile the stack project. Note: This is not true for the BLE SDK projects, only the lab projects.
+2.    Debug the ProjectZeroStack project (<kbd>F11</kbd> or the green bug icon)
+3.    Terminate the ProjectZeroStack debug (<kbd>Ctrl + F2</kbd> or red square icon)
+4.    Debug the ProjectZeroApp project (<kbd>F11</kbd>)
+5.    Alt 1: Terminate the ProjectZeroApp project (<kbd>Ctrl + F2</kbd> or red square icon)
+5.    Alt 2: Press <kbd>F8</kbd> or the Play/Pause button to stay in debug mode, but let the program run.
+
+After the application runs you should observe something like the following in your terminal application:
+
+![Putty initial](resources/putty_initial.png)
+
+This shows the user application initializing the three services LED, Button and Data, and set initial values for the characteristics in those services. Finally, callbacks are received from the stack that the device is ready and has started advertising its presence.
+
+Take a note of your device address for later use.
+
+{{y
+In the case that the terminal output is not working correctly, you can use [SmartRF Flash Programmer v2](http://www.ti.com/tool/flash-programmer) to find your device address.
+}}
+
+
+Task 2 - Connect and navigate exposed services
+==================================
+
+In order to interact with the Bluetooth low energy device you will need to use something to act as a Central device towards it.
+
+Texas Instruments provides a couple of PC tools for this, which in turn communicate over a serial port with special firmware loaded onto the CC2650 device. The serial commands conform to the HCI standard as defined by the Bluetooth SIG, and additionally allows control of the Host layers such as GATT, GAP and Security Manager in addition to the bare-metal Link Layer commands required by the HCI specification.
+
+Tools like BTool and [TI BLE Device Monitor](http://processors.wiki.ti.com/index.php/BLE_Device_Monitor_User_Guide) use this interface to connect to and interact with other BLE devices.
+
+You will now program a second board with the HostTest project. The HostTest project allows a user to call most of the GAP, GATT and ATT functions of the BLE stack via a serial interface.
+
+<span class="glyphicon glyphicon-hand-right gi-1p3x" style="margin-right: 0.3em"></span> Please refer to the [HostTest project information](../projects/ble_hosttest/information.html) for how to import, build and flash the HostTest application.
+
+
+[[b! Connecting with your smartphone
+
+You can also use you smartphone to connect to the device, in case you don't have a spare evaluation kit.
+
+Please see the Project Zero [getting started instructions](http://dev.ti.com/tirex/#/Device/CC2650?link=CC26xx%20Bluetooth%20Smart%2FDevelopment%20Tools%2FCC2650-LAUNCHXL%2FDocuments%2FCC2650-LAUNCHXL%20Project%20Zero) in Resource Explorer on [dev.ti.com](http://dev.ti.com) to find instructions for this.
+]]
+
+
+Start TI BLE Device Monitor
+---------------------------------
+
+Device Monitor is a PC Tool that uses the HCI Vendor Specific commands to act as a Bluetooth low energy device.
+
+When the PC Tool opens the first time, the first step is to configure which COM-port (Options &rarr; Serial port) to use as show in the picture below.
+
+If you have several COM ports, use Windows Device Manager to figure out which one is connected to the Application/User COM port of the kit with HostTest running. This is described above.
+
+![Device Manager](resources/dev_mgr_xds110_hosttest.png)
+
+
+Scan for BLE devices
+---------------------------------
+
+If the PC Tool does not scan automatically, it can be done manually by pressing the 'Scan' button. Connect to device with address matching the address you noted earlier.
+
+{{b> Notice also that the name **Project Zero** displayed here for the discovered device is the same as the name on the second line of the serial output above. }}
+
+![Scanned devices](resources/devmon_connect.png)
+
+After connecting and reading BUTTON0 as well as setting LED0, your serial window will look something like this:
+
+![Putty connected](resources/putty_connect_readwrite.PNG)
+
+Note the `Peer address` is the address of the kit you used as a Central device, in the picture above shown as the address of the 'Host'.
+
+Navigate the Attribute table
+---------------------------------
+
+Jumping directly into the deep end of the pool, what you are presented with after you are connected is a visualization of what is accessible to any connected GATT Client device via the Bluetooth Attribute Protocol.
+
+The only things reported over the air are `Handle`, which is a dynamic short-form way of addressing an attribute and `Type` which tells you how to interpret the `Value`, which is also available. Together, these three values comprise an `Attribute`.
+
+Each line in the view below is an `Attribute`. The reason the view is not flat is that the `Type` imposes a hierarchy in the GATT protocol like this (simplified):
+
+* *0x2800* &ndash; **Service declaration** &ndash; Value is the Service UUID.
+  * *0x2803* &ndash; **Characteristic declaration** &ndash; Value describes characteristic value attribute
+    * *0xXXXX(-XXX...)* &ndash; **Characteristic value attribute** &ndash; Value is actual data; all else is metadata.
+    * *0x29xx* &ndash; **Characteristic descriptors** &ndash; Value is info about characteristic value attribute.
+
+![Scanned devices](resources/devmon_ledsvc.png)
+
+[[+b Custom Identifier list (UUIDs) for Project Zero
+
+In case the tool you use to view the Attribute Table on the device running Project Zero does not have the meta-data to interpret the UUIDs to show you descriptions and mnemonics, use this list to identify each service and characteristic:
+
+Keep in mind that some tools will show `Value` and `Type` fields in the byte-order received over the air, which means for UUIDs that `F0001110-0451-4000-B000-000000000000` becomes `00:00:00:00:00:00:00:B0:00:40:51:04:10:11:00:F0`.
+
+ UUID                                    | ATT Field  | Description     |  Usage
+-----------------------------------------|------------|-----------------|---------
+F000**1110**-0451-4000-B000-000000000000 | Value      | LED Service     | *Service declaration*
+F000**1111**-0451-4000-B000-000000000000 | Type/Value | LED0 State      | Read state or write 01 or 00.
+F000**1112**-0451-4000-B000-000000000000 | Type/Value | LED1 State      | Read state or write 01 or 00.
+F000**1120**-0451-4000-B000-000000000000 | Value      | Button Service  | *Service declaration*
+F000**1121**-0451-4000-B000-000000000000 | Type/Value | BUTTON0 State   | Read state or subscribe to notifications
+F000**1122**-0451-4000-B000-000000000000 | Type/Value | BUTTON1 State   | Read state or subscribe to notifications
+F000**1130**-0451-4000-B000-000000000000 | Value      | Data Service    | *Service declaration*
+F000**1131**-0451-4000-B000-000000000000 | Type/Value | String char     | Read/Write a long string
+F000**1132**-0451-4000-B000-000000000000 | Type/Value | Stream char     | Send or receive WriteNoRsp/Notification
++]]
+
+[[d! Interact
+
+Expand the LED Service to see the Characteristics in that Service. Expand the LED0 State Characteristic and the LED1 State Characteristic to see all the Attributes that make up the LED Service.
+
+If you are adventurous you can also double click on an attribute to read its value, or double click on its Value column to edit. Write one byte with a value higher than 00 to LED0 State or LED1 State turn on the LEDs.
+]]
+
+[[d-question-sign Quiz-time
+
+What is the `Handle` of the **LED 1 Characteristic Declaration** on the device pictured above?
+
+[quiz]
+x> 28 --> Primary Service Declaration. Everything between this handle and the next Primary Service Declaration belongs to the LED Service.
+x> 29 --> This is the LED0 State Characteristic Declaration.
+x> 30 --> This is the value of LED0 (LED0 State Value Characteristic Attribute)
+v> 31
+x> 32 --> This is the **value** of LED1 (LED1 State Value Characteristic Attribute), not its declaration.
+[quiz]
+
+Where can you find a **Service UUID**?
+
+[quiz]
+v> Value of a Service Declaration
+x> Value of a Characteristic Declaration --> This is where you find the UUID of a **Characteristic**
+x> Value of a Characteristic Value attribute --> This is where you find the value that you want to send or receive.
+[quiz]
+
+What does the `Value` of a **Characteristic Declaration** tell you? Multiple correct answers.
+
+[quiz_multi]
+x> UUID of the Service that contains it --> No, the UUID of the service containing the Characteristic can be found by looking at the start- and end-handles of each Service and comparing it with the handle of a Characteristic Declaration.
+v> UUID of the Characteristic Value attribute
+x> Handle of the Characteristic Declaration --> No. And what would be the point? That's the attribute one you are reading already if you are looking at its Value.
+v> Access properties of the Characteristic Value attribute
+v> Handle of the Characteristic Value attribute
+[quiz_multi]
+
+How many `Attributes` does the **LED Service** consist of in total?
+
+[quiz]
+x> 2 --> This is the number of Characteristics in that Service. It is also the lowest prime number.
+x> 3 --> This is the number of meta-attributes.
+v> 5 --> Yes. Look again at the serial output during startup.
+[quiz]
+
+]]
+
+
+Profiles and Discovery
+---------------------------------
+
+When a device connects to your device, it has no idea what you have to offer in terms of Services and Characteristics it can interact with.
+
+Emulation tools like BLE Device Monitor will discover and display everything available for you to manipulate, but typically for most applications there will be a `Profile`. This is a document that describes what interactions can be done via Bluetooth Low Energy, which services are needed to accomplish various objectives, and how value reads and writes must be formatted and sequenced for this to be done.
+
+{{b> If you didn't know already, **GATT** imposes a meta-layer on top of **ATT**. Meaning that an **Attribute** is an **ATT** thing, whereas a **Service** is a **GATT** thing that uses **Attributes**.}}
+
+Using an emulation tool, it is up to you to figure out which `attributes` should be written or read in accordance with a `Profile` and manually act like a `GATT` enabled application would have done.
+
+Services and Characteristics are discovered after a connection is established and before GATT interaction can start. This is done because the `handle` of an `attribute` is what's used over the air on the ATT level to read/write, but handles are dynamically assigned. The only thing a remote device knows before it connects is the UUID of the services and characteristics it wants to use on the peer.
+
+### Health Thermometer example
+
+For example, you are a Health Thermometer Collector device and want to connect to and use a health thermometer that follows the Bluetooth SIG adopted `Profile` for [Health Thermometer](https://developer.bluetooth.org/gatt/profiles/Pages/ProfileViewer.aspx?u=org.bluetooth.profile.health_thermometer.xml).
+
+By reading the Bluetooth SIG specs, you know that the UUID of the [Health Thermometer Service](https://developer.bluetooth.org/gatt/services/Pages/ServiceViewer.aspx?u=org.bluetooth.service.health_thermometer.xml) is 0x1809, and the UUID of the [Temperature Measurement Characteristic](https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.temperature_measurement.xml) is 0x2A1C.
+
+You then discover the handles for these via defined procedures in order to configure/read/write.
+
+
+
+Task 3 - Get Notified
+==================================
+
+You have connected. You have read and written values to control a Bluetooth device and turned on and off LEDs. How about getting some data back from a sensor on your device, like the state of the buttons?
+
+[[d-question-sign Reading things that change
+
+Try to read the value of, let's say, `BUTTON0 State`. How is the value you read correlated with the actual state of the button? How often would you have to read the value out to make a reliable doorbell for example?
+
+[quiz]
+v> Very often, and not very well. --> I'm not even sure it could ever work reliably, because the minimum connection interval in Bluetooth Low Energy is 7.5ms, and you can send a `Read Request` only every third connection interval.
+[quiz]
+]]
+
+In this task you will learn how instead of polling the value you are interested in, which could waste a lot of energy, you can configure the device to transmit `Notifications` to you when the value changes.
+
+When you are connected to a peripheral device conforming to the [`Project Zero Profile`]{I just made that up. But there was actually some thought behind how Project Zero services should be used.}, this is possible to do for the button states because of three things:
+
+1. The `properties` for each BUTTONx State Characteristic includes the `GATT_PROP_NOTIFY` flag.
+2. The BUTTONx State Characteristics include a `Client Characteristic Configuration Descriptor` attribute. Writing to this allows a `GATT Client` to enable or disable `Notifications`.
+3. The application cares about the value of the `CCCD Attribute` and also tries to send a `Notification` when the state changes.
+
+If we have a look at the `Button Service` things may become clearer:
+
+![CCCD](resources/devmon_cccd.png)
+
+In the figure above, the `Access Properties` field of each `Characteristic Declaration` is marked, as well as the `Type`, the human-friendly description, and the `Value` of the `Client Characteristic Configuration Descriptor` for each of the button state characteristics.
+
+Access Properties
+---------------------------------
+
+Each characteristic has properties, which are made known in its declaration via a bit-map. The list below is an excerpt from the definitions in the TI BLE SDK.
+
+```c
+/** @defgroup GATT_PROP_BITMAPS_DEFINES GATT Characteristic Properties Bit Fields
+ * @{
+ */
+#define GATT_PROP_BCAST         0x01 //!< Permits broadcasts of the Characteristic Value
+#define GATT_PROP_READ          0x02 //!< Permits reads of the Characteristic Value
+#define GATT_PROP_WRITE_NO_RSP  0x04 //!< Permits writes of the Characteristic Value without response
+#define GATT_PROP_WRITE         0x08 //!< Permits writes of the Characteristic Value with response
+#define GATT_PROP_NOTIFY        0x10 //!< Permits notifications of a Characteristic Value without acknowledgement
+#define GATT_PROP_INDICATE      0x20 //!< Permits indications of a Characteristic Value with acknowledgement
+#define GATT_PROP_AUTHEN        0x40 //!< Permits signed writes to the Characteristic Value
+#define GATT_PROP_EXTENDED      0x80 //!< Additional characteristic properties are defined in the Characteristic Extended Properties Descriptor
+/** @} End GATT_PROP_BITMAPS_DEFINES */
+``` Snippet from gattservapp.h
+
+[[d-question-sign What are the properties?
+
+Consider the properties field (hexadecimal) of the two Button State characteristics and the flag list above. Multiple properties are logic-OR'ed together.
+
+What are the access properties of the Button State characteristics?
+
+[quiz_multi]
+x> Broadcast --> If enabled, the properties would be `0x12 | 0x01` which is `0x13`
+v> Read
+x> WriteNoRsp --> If enabled, the properties would be `0x12 | 0x04` which is `0x16`
+x> Write --> If enabled, the properties would be `0x12 | 0x08` which is `0x1A`
+v> Notify
+x> Indicate --> If enabled, the properties would be `0x12 | 0x20` which is `0x32`
+x> Signed writes --> If enabled, the properties would be `0x12 | 0x40` which is `0x62`
+[quiz_multi]
+
+]]
+
+
+Client Characteristic Configuration
+---------------------------------
+
+The behavior and usage of attributes with the type `0x2902` is defined by the Bluetooth Specification. Luckily, it's not very complicated.
+
+The `Value` of the attribute is a 16-bit wide field. Writing `01:00`, which can be translated to `0x0001`, will tell the device that it's allowed to send `Notifications` of value changes to you. If you write `00:00` you disable transmissions. If you write `02:00` you allow `Indications` instead. That is not permitted for the button characteristics.
+
+[[d-question-sign Quiz!
+
+Looking at the picture above, what is the `Handle` of the `CCCD` attribute for `BUTTON1 State` characteristic?
+
+[quiz]
+x> 35
+x> 36
+x> 38
+v> 39
+[quiz]
+
+What is the configuration of each Button state? Two correct answers.
+
+[quiz_multi]
+x> BUTTON0: Noti enabled --> CCCD with handle 36 has value `00:00`, so is off.
+v> BUTTON0: Noti disabled
+v> BUTTON1: Noti enabled
+x> BUTTON1: Noti disabled --> CCCD with handle 39 has value `01:00`, so is enabled for Notifications.
+[quiz_multi]
+
+]]
+
+[[d-hand-right Action!
+* Enable notifications for both BUTTON0 and BUTTON1.
+* Try to press the buttons.
+* Observe serial output and the value apparent in the Device Monitor GUI. Can you follow the sequence of events in the code?
+]]
+
+
+
+Task 4 - Customize the Application
+==================================
+
+This task teaches you to customize how the device appears to the outside, to make it more personal.
+
+There are three main ways you can set your mark on the device:
+* The `GAP_ADVTYPE_LOCALNAME_(SHORT|COMPLETE)` field in either AdvData or Scan Response`.
+* The `Device Name` Characteristic in the `Generic Access Service`, and
+* Various strings in the `Device Information Service`
+
+The `GAP_ADVTYPE_LOCALNAME` is the field that is displayed by most end-equipment when scanning for Bluetooth Devices, and it's that field we'll change now. After a connection is established, and the Service Discovery is complete, many types of end-equipment will then use the value from `Device Name` for display.
+
+[[d-hand-right Read the Device Name
+
+Using your GATT Client emulator, find the service called `Generic Access Service (UUID 0x1800)`, expand it to find `Device Name (UUID 0x2A00)`, and then read this value.
+
+]]
+
+Change the Advertisement data
+---------------------------------
+
+The two variables `advertData` and `scanRspData` contain the data the device will transmit while advertising its existence to any interested parties in order for them to see the device and connect to it.
+
+[[d-hand-right Change LOCAL_NAME
+
+In `project_zero.c`, find the array called `advertData` (search via <kbd>Ctrl+F</kbd>) and modify the nugget `LOCAL_NAME_COMPLETE` of `advertData` to broadcast a name you like better than the original.
+
+```c
+static uint8_t advertData[] =
+{
+  /* ... */
+  // Complete name
+  10,                               // length of this nugget including flag byte.
+  GAP_ADTYPE_LOCAL_NAME_COMPLETE,   // identifier for this nugget
+  'S', 'p', 'i', 'd', 'e', 'r', 'P', 'i', 'g',
+  /* ... */
+}
+``` Example LOCAL_NAME modification. Note length field.
+
+When you have done this, right-click on the ProjectZeroApp project and select `Build Project`. When this is completed, download to the target, run the changed code and observe that when you scan for Bluetooth Devices, the name has changed. The change will also show up in the serial output.
+
+{{y Note that iOS has a tendency to cache previously known device names and may not update yours.}}
+]]
+
+[[g! That's it!
+
+Very well done! For adventure's sake, you can also change the `Device Name` value.
+
+Find the function call `GGS_SetParameter(GGS_DEVICE_NAME_ATT, ...)` in the function `project_zero.c::ProjectZero_init()` and modify the contents of the array being pointed to.
+
+]]
+
+</xmp>
+
+<div align="center" style="margin-top: 4em;">
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="../../web_support/cc_license_icon.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.</div>
+
+
+<link rel="stylesheet" href="../../web_support/highlight/styles/zenburn.css"/>
+<script src="../../web_support/strapdown/vendor/jquery-1.11.2.min.js"></script>
+<script src="../../web_support/strapdown/vendor/bootstrap.min.js"></script>
+<script src="../../web_support/highlight/highlight.pack.js"></script>
+<script src="../../web_support/strapdown/v/0.2/strapdown.js"></script>
+
+</html>

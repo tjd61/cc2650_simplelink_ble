@@ -1,0 +1,11 @@
+digraph "dma" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_9ed54c436094c10285761171525ba0a5 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="drivers" fontname="Helvetica", fontsize="10", URL="dir_9ed54c436094c10285761171525ba0a5.html"]
+  dir_96f07241710aea1740e1e00974fe26f4 [shape=box, label="dma", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_96f07241710aea1740e1e00974fe26f4.html"];
+  }
+  dir_1d136cf632eab95596d35826a4ed8c4e [shape=box label="power" URL="dir_1d136cf632eab95596d35826a4ed8c4e.html"];
+  dir_96f07241710aea1740e1e00974fe26f4->dir_1d136cf632eab95596d35826a4ed8c4e [headlabel="1", labeldistance=1.5 headhref="dir_000032_000024.html"];
+}

@@ -1,0 +1,101 @@
+<projectSpec>
+  <project
+    name="project_zero_ble_sap_msp432launchxl"
+    device="Cortex M.MSP432P401R"
+    
+    compilerBuildOptions="
+    -D__MSP432P401R__ 
+    -Dxdc_runtime_Assert_DISABLE_ALL
+    -DNPI_USE_UART 
+    -DPOWER_SAVING
+    -DSTANDARD_MRDY_SRDY
+    -Dxdc_FILE=&quot;\&quot;${InputFileName}\&quot;&quot;
+    
+    -I${PROJECT_LOC}
+    -I${PROJECT_LOC}/Profiles  
+    -I${MSP_BLE_EXAMPLES_ROOT}/common/profiles/SimpleProfile/ 
+    -I${MSP_BLE_EXAMPLES_ROOT}/common/profiles/ 
+    -I${MSP_BLE_EXAMPLES_ROOT}/common/components/uart_log/ 
+    -I${MSP_BLE_EXAMPLES_ROOT}/common/profiles/Auxiliary/ 
+    -I${MSP_BLE_EXAMPLES_ROOT}/common 
+    -I${MSP_BLE_EXAMPLES_ROOT}/common/boards/Board_EXP432P401RLP/ 
+    -I${PROJECT_LOC}/sbl 
+    -I${SAP_ROOT}/source/ 
+    -I${COM_TI_RTSC_TIRTOSMSP430_INSTALL_DIR}/products/msp432_driverlib_3_21_00_05/driverlib/MSP432P4xx 
+    -I${COM_TI_RTSC_TIRTOSMSP430_INSTALL_DIR}/products/msp432_driverlib_3_21_00_05/inc/ 
+    -I${COM_TI_RTSC_TIRTOSMSP430_INSTALL_DIR}/products/msp432_driverlib_3_21_00_05/inc/CMSIS/ 
+    -I${COM_TI_RTSC_TIRTOSMSP430_INSTALL_DIR}/products/msp432_driverlib_3_21_00_05/packages
+    "
+    
+    linkerBuildOptions=" 
+    -l${COM_TI_RTSC_TIRTOSMSP430_INSTALL_DIR}/products/msp432_driverlib_3_21_00_05/driverlib/MSP432P4xx/ccs/msp432p4xx_driverlib.lib  
+    -l${SAP_ROOT}/source/ti/sap/lib/release/sap_uart_pm.aem4f 
+    -l${SAP_ROOT}/source/ti/npi/lib/release/npi_uart_pm_msp432.aem4f -x
+    "
+    
+    enableHexTool="true" 
+    >
+    
+    <property name="type" value="rtsc"/>
+    <property name="products" value="com.ti.rtsc.TIRTOSmsp430"/>
+    <property name="xdcToolsVersion" value="3.31.01.33"/>
+    <property name="target" value="ti.targets.arm.elf.M4F"/>
+    <property name="platform" value="ti.platforms.msp432:MSP432P401R"/>
+    <property name="buildProfile" value="release"/>
+    <property name="isHybrid" value="true"/>
+    <property name="configuroOptions" value="--compileOptions &quot;${COMPILER_FLAGS} &quot; "/>
+    
+    <pathVariable name="EXT_TI_PRODUCTS_DIR" path="../../../../.." scope="project"></pathVariable>
+    <pathVariable name="MSP_CONN_LIB_BASE" path="${EXT_TI_PRODUCTS_DIR}/msp_connectivity_library_1_10_03_01" scope="project"></pathVariable>
+    <pathVariable name="MSP_BLE_EXAMPLES_ROOT" path="${MSP_CONN_LIB_BASE}/ble_cc26xx/examples" scope="project" />
+    <pathVariable name="SAP_ROOT" path="${MSP_CONN_LIB_BASE}/sap_3_10_00_05_eng" scope="project" />
+
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/ProjectZero/MSP432P4xx/src/main.c" targetDirectory="Application" />
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/ProjectZero/MSP432P4xx/src/ProjectZero.cfg" targetDirectory="Application"/>
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/ProjectZero/MSP432P4xx/src/ProjectZero.c" targetDirectory="Application"/>
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/ProjectZero/MSP432P4xx/src/ProjectZero.h" targetDirectory="Application"/>
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/ProjectZero/MSP432P4xx/src/ProjectZero_params.c" targetDirectory="Application"/>
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/boards/Board_EXP432P401RLP/Board.h" targetDirectory="Board" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/boards/Board_EXP432P401RLP/MSP_EXP432P401R.c" targetDirectory="Board" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/boards/Board_EXP432P401RLP/MSP_EXP432P401R.h" targetDirectory="Board" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/SimpleProfile/simpleGATTprofile.c" targetDirectory="Profiles" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/SimpleProfile/simpleGATTprofile.h" targetDirectory="Profiles" />
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/Auxiliary/buttonservice.c" targetDirectory="Profiles" />
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/Auxiliary/buttonservice.h" targetDirectory="Profiles" />
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/Auxiliary/dataservice.c" targetDirectory="Profiles" />
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/Auxiliary/dataservice.h" targetDirectory="Profiles" />
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/Auxiliary/LEDservice.c" targetDirectory="Profiles" />
+    <file action="copy" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/Auxiliary/LEDservice.h" targetDirectory="Profiles" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/st_util.c" targetDirectory="Profiles" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/profiles/st_util.h" targetDirectory="Profiles" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/components/uart_log/uart_logs.c" targetDirectory="Utility" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/components/uart_log/uart_logs.h" targetDirectory="Utility" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/comdef.h" targetDirectory="Utility" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/bcomdef.h" targetDirectory="Utility" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/hal_types.h" targetDirectory="Utility" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/hal_defs.h" targetDirectory="Utility" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/util.h" targetDirectory="Utility" />
+    <file action="link" path="${MSP_BLE_EXAMPLES_ROOT}/common/util.c" targetDirectory="Utility" />
+    <file action="link" path="${MSP_CONN_LIB_BASE}/ble_cc26xx/snp_image/snp_image.c" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl.h" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl.c" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_cmd.h" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_cmd.c" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_image.h" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_image_int.c" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_internal.h" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_msp.c" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_tl.c" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_tl.h" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sbl/sbl_tl_msp.c" targetDirectory="sbl" />
+    <file action="link" path="${SAP_ROOT}/source/ti/sap/lib/release/sap_uart_pm.aem4f" targetDirectory="Libraries" />
+    <file action="link" path="${SAP_ROOT}/source/ti/npi/lib/release/npi_uart_pm_msp432.aem4f" targetDirectory="Libraries" />
+    
+    <file path="../src/app/ProjectZero_soln.c" openOnCreation="" excludeFromBuild="true" action="copy" targetDirectory="Application" createVirtualFolders="true"> </file>
+    <file path="../src/app/Profiles/buttonservice_soln.c" openOnCreation="" excludeFromBuild="true" action="copy" targetDirectory="Profiles" createVirtualFolders="true"> </file>
+    <file path="../src/app/Profiles/buttonservice_soln.h" openOnCreation="" excludeFromBuild="true" action="copy" targetDirectory="Profiles" createVirtualFolders="true"> </file>
+    <file path="../src/app/Profiles/LEDservice_soln.c" openOnCreation="" excludeFromBuild="true" action="copy" targetDirectory="Profiles" createVirtualFolders="true"> </file>
+    <file path="../src/app/Profiles/LEDservice_soln.h" openOnCreation="" excludeFromBuild="true" action="copy" targetDirectory="Profiles" createVirtualFolders="true"> </file>
+    
+  </project>
+</projectSpec>

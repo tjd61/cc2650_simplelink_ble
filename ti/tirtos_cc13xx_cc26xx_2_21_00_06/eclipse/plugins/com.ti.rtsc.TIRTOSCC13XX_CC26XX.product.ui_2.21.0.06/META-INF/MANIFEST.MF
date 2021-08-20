@@ -1,0 +1,253 @@
+Manifest-Version: 1.0
+Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.he
+ lp,org.eclipse.rtsc.xdctools.ui;resolution:=optional
+Bundle-Vendor: Texas Instruments
+Eclipse-LazyStart: true
+Bundle-Version: 2.21.0.06
+Bundle-Name: TI-RTOS for CC13XX and CC26XX IDE Tooling
+Bundle-Localization: plugin
+Bundle-ManifestVersion: 2
+Bundle-Activator: org.eclipse.rtsc.xdctools.ui.cdt.CCSActivator;resolu
+ tion:=optional
+Created-By: 1.6.0_37 (Sun Microsystems Inc.)
+Bundle-SymbolicName: com.ti.rtsc.TIRTOSCC13XX_CC26XX.product.ui;single
+ ton:=true
+
+Name: uia_eclipse_cdoc_toc.xml
+SHA1-Digest: l55NxAGjvAF1Qpm3LPBbVo9nj9I=
+
+Name: resources/ti/boards/CC1350STK/CC1350STK.cmd
+SHA1-Digest: yj1E9/eTSMJkeWGkhGiNno27bHg=
+
+Name: resources/ti/boards/CC2650_LAUNCHXL/CC2650_LAUNCHXL.lds
+SHA1-Digest: 7mnXRgjKXJ75DOMVvKUesnCv9/k=
+
+Name: resources/examples/source/adcbufcontinuous/lprf/adcBufContinuous
+ Sampling.c
+SHA1-Digest: dqlTEqp8xln5PQKYw80iKKGn1UQ=
+
+Name: resources/ti/boards/CC1350STK/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/ti/boards/CC1350_LAUNCHXL/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/ti/boards/CC2650DK_4XS/Board.h
+SHA1-Digest: N7a1l3pQmK4T8m/21O/o5LcfyaE=
+
+Name: resources/examples/source/empty/lprf/empty.cfg
+SHA1-Digest: ZsPoVLbIY9dj9Q6ImDprtupKiwI=
+
+Name: resources/ti/boards/CC2650DK_7ID/CC2650DK_7ID.cmd
+SHA1-Digest: HB7z7q1FhmiNXut2pUj1yfbzS8w=
+
+Name: resources/ti/boards/CC2650_LAUNCHXL/CC2650_LAUNCHXL.cmd
+SHA1-Digest: Tklu3BNlTs3ZrvZBIZqLx4pNvpU=
+
+Name: resources/ti/boards/CC2650STK/CC2650STK.lds
+SHA1-Digest: hVfmz6z7/E70SEG/0M1txHpyxiY=
+
+Name: resources/examples/source/empty/lprf/README.html
+SHA1-Digest: KHhnDoacGv0r592hCD2AvpGeNKg=
+
+Name: resources/ti/boards/CC2650DK_7ID/Board.h
+SHA1-Digest: sIpOdE77QAHrHjFtv+IAOuFnkCs=
+
+Name: resources/ti/boards/CC2650DK_5XD/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/ti/boards/CC2650_LAUNCHXL/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/examples/source/adcsinglechannel/README.html
+SHA1-Digest: PWOvbIzWzYeucUzTpWPfy0XQh54=
+
+Name: resources/ti/boards/CC2650DK_4XS/CC2650DK_4XS.lds
+SHA1-Digest: Wfq2SoaQ7mubuPcFxXBihWM2qMg=
+
+Name: resources/ti/boards/CC2650DK_4XS/CC2650DK_4XS.h
+SHA1-Digest: SD+YG7VpLr3FTbtzIYLYtwQhorI=
+
+Name: resources/ti/boards/CC2650_LAUNCHXL/Board.h
+SHA1-Digest: 64V33myrzyLLUwwkoHcEQdriyC0=
+
+Name: toc_top.xml
+SHA1-Digest: uLMO4RoQcWO6xNccNDvmSd12KdY=
+
+Name: resources/ti/boards/CC2650STK/Board.h
+SHA1-Digest: zbCpij3zzadsD4oNYXzkeMsqh6k=
+
+Name: resources/ti/boards/CC2650DK_4XS/CC2650DK_4XS.c
+SHA1-Digest: NMHsEScxmOLSzAV2k8yXm/b3+fQ=
+
+Name: resources/examples/source/empty_min/lprf/empty_min.c
+SHA1-Digest: r0SjOxLNUqb9lJyCcSHEuQV+y4k=
+
+Name: resources/ti/boards/CC2650DK_7ID/CC2650DK_7ID.lds
+SHA1-Digest: aVUcMPlLT43bR2L4lkJuTPgn6Ao=
+
+Name: resources/ti/boards/CC1310DK_7XD/CC1310DK_7XD.cmd
+SHA1-Digest: mOOMHZv3wD67NuD7wVP/QpIEZ60=
+
+Name: resources/ti/boards/CC1310DK_7XD/CC1310DK_7XD.lds
+SHA1-Digest: Q4j3J/Ljx8qJ5r3IaQx0XClTgPY=
+
+Name: resources/ti/boards/CC2650STK/CC2650STK.cmd
+SHA1-Digest: fsrxj7q1z5xB5D6YXF6GF3ElFYg=
+
+Name: resources/ti/boards/CC1310DK_7XD/CC1310DK_7XD.c
+SHA1-Digest: wBmItXPWvxXdypY6jOU6nwo7HJE=
+
+Name: resources/ti/boards/CC2650DK_4XS/CC2650DK_4XS.cmd
+SHA1-Digest: dyhpJIQqF+AOAHZzRODeAswgNrA=
+
+Name: resources/ti/boards/CC1310DK_7XD/CC1310DK_7XD.h
+SHA1-Digest: 1LNHVBlHcFutVxjC7MMDYaOBZpw=
+
+Name: resources/ti/boards/CC1310_LAUNCHXL/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: plugin.properties
+SHA1-Digest: JpnyBpgepiWRb6FmylqGgzldULQ=
+
+Name: resources/ti/boards/CC2650DK_5XD/CC2650DK_5XD.h
+SHA1-Digest: GQQI02kEdLSX+PqX0kNpYppej6s=
+
+Name: resources/examples/source/empty_min/lprf/README.html
+SHA1-Digest: pVzQ8oFpkmzVGxXlTqlZ1d3xuKg=
+
+Name: resources/examples/source/adcsinglechannel/lprf/adcsinglechannel
+ .c
+SHA1-Digest: mBz0KnnEinS8NXmGeDeDTrSH/1E=
+
+Name: resources/ti/boards/CC1310DK_7XD/Board.h
+SHA1-Digest: 9KC2Y5H/QJK9ZM2kaK8wZ9hUuRQ=
+
+Name: resources/examples/source/adcbufcontinuous/lprf/adcBufContinuous
+ Sampling.cfg
+SHA1-Digest: ZsPoVLbIY9dj9Q6ImDprtupKiwI=
+
+Name: resources/ti/boards/CC2650DK_5XD/CC2650DK_5XD.c
+SHA1-Digest: TGUbmX2NGC13VEcU2jflErROJgg=
+
+Name: resources/ti/boards/CC2650DK_7ID/CC2650DK_7ID.c
+SHA1-Digest: hIlbpqzIqgGn4QBglUO2Bt6665Y=
+
+Name: resources/ti/boards/CC1350_LAUNCHXL/CC1350_LAUNCHXL.lds
+SHA1-Digest: lltvI35z/WGVB3C1bIhItVyV4e0=
+
+Name: tirtos_eclipse_cdoc_toc.xml
+SHA1-Digest: Kfh5ano7IysDoCx+sTjJEWa70Lk=
+
+Name: resources/ti/boards/CC2650DK_7ID/CC2650DK_7ID.h
+SHA1-Digest: LqY4Qyttg5NQ1rM2pbyxFB6VTrU=
+
+Name: resources/ti/boards/CC1350STK/CC1350STK.lds
+SHA1-Digest: EwJxpIvq5tu10349/JZgJjH+tUQ=
+
+Name: resources/ti/boards/CC1350STK/Board.h
+SHA1-Digest: OA18MGS/UTyMak9HR0FGAdUyqm4=
+
+Name: resources/examples/source/empty_min/lprf/empty_min.cfg
+SHA1-Digest: EmFCZrJdaZO/0HZNNwZHmJNohjQ=
+
+Name: resources/ti/boards/CC2650DK_5XD/CC2650DK_5XD.lds
+SHA1-Digest: bhko2dhiA1xrLV8hzNGbGfYvWOM=
+
+Name: resources/examples/source/empty/lprf/README.md
+SHA1-Digest: bxlyRv6SdSIu6U2ucEX4kx6V+kA=
+
+Name: resources/ti/boards/CC1350_LAUNCHXL/Board.h
+SHA1-Digest: FmF0U1ZljSGjBuSHxKJa03hhEWU=
+
+Name: resources/ti/boards/CC1350_LAUNCHXL/CC1350_LAUNCHXL.c
+SHA1-Digest: Qp9BYba0dSRk1/bAYpC2vPKZqbA=
+
+Name: resources/ti/boards/CC1310_LAUNCHXL/CC1310_LAUNCHXL.c
+SHA1-Digest: vedwaLV2ErCE9wtov/NKJFUkbdc=
+
+Name: resources/ti/boards/CC1350_LAUNCHXL/CC1350_LAUNCHXL.h
+SHA1-Digest: WExUANRvGUDLZ1uZN8g7ihLkoBs=
+
+Name: resources/examples/makefile.defs
+SHA1-Digest: LgJMeuumhLImGFCH07Tl8nPkBt4=
+
+Name: resources/ti/boards/CC1350_LAUNCHXL/CC1350_LAUNCHXL.cmd
+SHA1-Digest: nSXEwsw7KfCeMCznaK+g5IZbgnM=
+
+Name: bios_eclipse_cdoc_toc.xml
+SHA1-Digest: zn4BCPTmpx+j67+ttjpvbkag97A=
+
+Name: resources/examples/source/adcbufcontinuous/README.md
+SHA1-Digest: OzHT7GaDyzCWceuyavhHJrJhP6Y=
+
+Name: resources/ti/boards/CC2650STK/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/ti/boards/CC1310_LAUNCHXL/CC1310_LAUNCHXL.cmd
+SHA1-Digest: zDlt90zL2i8nCfMPXCt0BjNjH5g=
+
+Name: resources/ti/boards/CC1310DK_7XD/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/ti/boards/CC2650_LAUNCHXL/CC2650_LAUNCHXL.h
+SHA1-Digest: bJ4NOT8dmGE9KkLlEH1ZgwXI/dA=
+
+Name: resources/ti/boards/CC2650DK_5XD/Board.h
+SHA1-Digest: Vl8vJQFUx9IoPsT2p+5tdmetUdg=
+
+Name: resources/examples/source/adcsinglechannel/lprf/adcsinglechannel
+ .cfg
+SHA1-Digest: ZsPoVLbIY9dj9Q6ImDprtupKiwI=
+
+Name: resources/ti/boards/CC2650DK_5XD/CC2650DK_5XD.cmd
+SHA1-Digest: MLp94JuIzJKbPuLAfOSaZfo9VBU=
+
+Name: resources/examples/source/adcsinglechannel/README.md
+SHA1-Digest: FCi7AR8RFHc6G6Xk7HOP6cbMQaM=
+
+Name: resources/ti/boards/CC2650_LAUNCHXL/CC2650_LAUNCHXL.c
+SHA1-Digest: l9XfpUMns66upgaygCylxb0t8dI=
+
+Name: resources/ti/boards/CC2650STK/CC2650STK.h
+SHA1-Digest: CEVsSIvQAb9z5LPxp2S+unhCY38=
+
+Name: resources/ti/boards/CC1350STK/CC1350STK.c
+SHA1-Digest: c6eXCFH+QTe+FAFRq7bohzJKfKA=
+
+Name: resources/examples/source/adcbufcontinuous/README.html
+SHA1-Digest: LYwyvDCXz3i4emtwjHGvMI8EUSE=
+
+Name: resources/examples/source/empty/lprf/empty.c
+SHA1-Digest: Jb56NR6VNvIPOZp79qVeHxk+8Gw=
+
+Name: resources/ti/boards/CC1310_LAUNCHXL/Board.h
+SHA1-Digest: u+01lZJrBNzNW28iF4cew33wmrQ=
+
+Name: resources/ti/boards/CC2650STK/CC2650STK.c
+SHA1-Digest: LZPRmrmo4KToCUOb2IUW868tIPw=
+
+Name: toc.xml
+SHA1-Digest: 3u7ncox7gTMoPjBqmURjdIG33ho=
+
+Name: resources/ti/boards/CC1310_LAUNCHXL/CC1310_LAUNCHXL.lds
+SHA1-Digest: kgRdglwrnJDJ6JqK0/93Oy7XsNU=
+
+Name: resources/ti/boards/CC2650DK_4XS/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/examples/source/empty_min/lprf/README.md
+SHA1-Digest: y/xd19M7DOIyogndlVqod8fe01Y=
+
+Name: resources/ti/boards/CC2650DK_7ID/ccfg.c
+SHA1-Digest: NeNoYfRTZZZJNQVSblupKenG5Wo=
+
+Name: resources/ti/boards/CC1310_LAUNCHXL/CC1310_LAUNCHXL.h
+SHA1-Digest: zF5JgmsLkUqHJfeiz6HstMZnLYg=
+
+Name: plugin.xml
+SHA1-Digest: lsk2oKGhgSOJYHsPu9MEMM1/dw4=
+
+Name: resources/ti/boards/CC1350STK/CC1350STK.h
+SHA1-Digest: DRx7zAYy0hwhz92LOGfQOMY3Nrg=
+

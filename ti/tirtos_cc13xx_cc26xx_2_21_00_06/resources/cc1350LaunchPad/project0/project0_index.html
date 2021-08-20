@@ -1,0 +1,421 @@
+<!doctype html>
+<!--
+	@license
+	Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+	This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+	The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+	The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+	Code distributed by Google as part of the polymer project is also
+	subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<html lang="">
+
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="generator" content="Project 0" />
+		<title>Project 0</title>
+
+
+
+
+	    <script src="/components/gc/1.0.0/webcomponentsjs/webcomponents-lite.js"></script>
+
+		<!-- Add your elements here -->
+
+		<!--<link rel="import" href="/components/gc/1.0.0/polymer/polymer.html">-->
+
+
+
+
+		<!-- will be replaced with elements/elements.vulcanized.html -->
+		<!-- Iron elements -->
+		<!--<link rel="import" href="/components/gc/1.0.0/iron-flex-layout/classes/iron-flex-layout.html">-->
+		<link rel="import" href="/components/gc/1.0.0/iron-flex-layout/iron-flex-layout.html">
+		<link rel="import" href="/components/gc/1.0.0/iron-image/iron-image.html">
+
+
+		<link rel="import" href="/components/gc/1.0.0/paper-material/paper-material.html">
+		<link rel="import" href="/components/gc/1.0.0/paper-card/paper-card.html">
+		<link rel="import" href="/components/gc/1.0.0/paper-styles/color.html">
+
+		<!--link rel="import" href="/components/gc/1.0.0/ti-widget-tabbedEditor/ti-widget-tabbedEditor.html"-->
+	    <link rel="import" href="/components/gc/1.0.0/ti-widget-flashtool/ti-widget-flashtool.html">
+
+		<!-- Add your elements here -->
+                <link rel="stylesheet" href="./styles/main.css">
+                <link rel="import" href="./styles/shared-styles.html">
+
+		<link rel="import" href="/components/gc/1.0.0/paper-tabs/paper-tabs.html">
+		<link rel="import" href="/components/gc/1.0.0/iron-pages/iron-pages.html">
+
+		<!-- endreplace-->
+
+		<!-- For shared styles, shared-styles.html import in elements.html -->
+		<!--<style is="custom-style" include="shared-styles">-->
+		<style is="custom-style">
+
+			#editorDiv {
+            margin-left:80px;
+            margin-right:80px;
+            }
+
+			#cards {
+		/*		background-color: #cc0000;
+			@apply(--layout-vertical);
+			@apply(--center-justified);*/
+			max-width: 1000px;
+			margin-left: auto;
+			margin-right: auto;
+
+			}
+
+			.container {
+			@apply(--layout-horizontal);
+			@apply(--layout-wrap);
+			}
+
+			paper-card {
+				width: 100%;
+				margin-bottom: 16px;
+
+				--paper-card-header-text: {
+				font-size: 2.2em;
+				color: #189;
+				font-family: 'Roboto', arial, sans-serif;
+				font-weight: 300;
+				};
+
+			}
+
+			.fancy_inner {
+				/*background-image: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgi…gd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmFkKSIgLz48L3N2Zz4g");*/
+				background-size: 100%;
+				background-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 20%, rgba(0,0,0,0.8) 100%);
+				z-index:1;
+				position: absolute;
+				bottom: 41px;
+				left:16px;
+				width: 97%;
+				padding-top: 60px;
+				padding-bottom: 60px;
+			}
+
+			.fancy_inner .medium {
+			font-size:48px;
+			color: #FFFFFF;
+			padding-bottom: 8px;
+			padding-left: 80px;
+			font-family: 'Roboto', arial, sans-serif;
+			font-weight: 300;
+
+			}
+
+			.fancy_inner .small {
+			font-size: 22px;
+			color: #FFFFFF;
+			padding-bottom: 8px;
+			padding-left: 80px;
+			font-family: 'Roboto', arial, sans-serif;
+			font-weight: 300;
+			}
+
+			.circle{
+			-moz-border-radius: 50%;
+			-webkit-border-radius: 50%;
+			border-radius: 50%;
+			font-size:24px;
+			background-color:#555;
+			color:#fff;
+			width:30px;
+			height:30px;
+			display: table-cell;
+			vertical-align: middle;
+			text-align: center;
+			box-shadow: 2px 2px 2px #aaa;
+			}
+
+			.circle span {
+			position:relative;
+			top:3px;
+			}
+
+			.notelayout {
+			font-size: 12px;
+			@apply(--layout-horizontal);
+			margin: 1em;
+			background: #F1FFF7;
+			border: 1px solid #C9F0DD;
+			}
+
+			iron-list {
+			background-color: var(--paper-grey-200, #eee);
+			padding-bottom: 16px;
+			}
+
+			.item {
+			@apply(--layout-horizontal);
+			padding-bottom: 16px;
+			}
+
+			.item:focus {
+			outline: 0;
+			border-color: #666;
+			}
+
+			.pad {
+			padding: 0 16px;
+			width: 90%;
+			@apply(--layout-vertical);
+			}
+
+			.tabs {
+				--paper-tabs: {
+						background-color: #555;
+				};
+			}
+
+			a {
+			    color: #189;
+			    text-decoration: none;
+			    outline: 0;
+			}
+
+		    paper-tabs.ti-red::shadow #selectionBar {
+		      background-color: #c00;
+		    }
+
+		    paper-tabs.ti-red paper-tab::shadow #ink {
+		      color: #c00;
+		    }
+
+		</style>
+
+
+		<script>
+
+            var loadjsfile = function(filename) {
+                var fileref = document.createElement("script");
+                fileref.src = filename;
+                document.write( fileref.outerHTML );
+            };
+
+            var loadCSSFile = function( filename ){
+                var fileref = document.createElement("link");
+                fileref.href = filename;
+                fileref.type = "text/css";
+                fileref.rel = "stylesheet";
+                document.write( fileref.outerHTML );
+            };
+
+
+            //window.TI_CLOUD_AGENT_HOST = "dev.ti.com";
+            window.TI_CLOUD_AGENT_PORT = "";
+
+            //var cloudServer = "http://" + window.TI_CLOUD_AGENT_HOST;
+            var cloudServer = "";
+            loadjsfile(cloudServer + "/ticloudagent/q.js");
+            loadjsfile(cloudServer + "/ticloudagent/agent.js");
+            loadCSSFile(cloudServer + "/ticloudagent/agent-flash.css");
+            loadjsfile(cloudServer + "/ticloudagent/agent-flash.js");
+    </script>
+
+
+	</head>
+
+	<body unresolved class="fullbleed layout vertical">
+		<span id="browser-sync-binding"></span>
+			<div id="cards">
+
+				<paper-card elevation="0">
+					<div class="card-content">
+						<iron-image style="width:969px;height:543px;" sizing="contain" src="images/cc1350lp_perspective_lcd.jpg">
+						</iron-image>
+						<div class="fancy_inner">
+							<div class="medium">CC1350 Launchpad</div>
+							<div class="small">project 0</div>
+						</div>
+					</div>
+				</paper-card>
+
+
+				<paper-card heading="Project Zero for the CC1350 LaunchPad" elevation="0">
+					<div class="card-content">
+						<span ><p>Congratulations on choosing the CC1350 Wireless MCU and LaunchPad ecosystem!
+						This example will show you how to build/compile your own images for use with the BLE OAD service using Code Composer Studio.
+					</div>
+				</paper-card>
+
+				<paper-card heading="Software Prerequisites" elevation="0">
+					<div class="container">
+						<div class="card-content">
+							<p>Before starting on this tutorial you need to download and install <a href="http://www.ti.com/tool/CCSTUDIO"> Code Composer Studio 6.1.3 or later.</a></p>
+						</div>
+					</div>
+				</paper-card>
+
+							<paper-card heading="Getting Started Demo" elevation="0">
+								<div class="card-content">
+									We will use the <a target="_blank" href="http://dev.ti.com/tirex/#/?link=TI-RTOS%20for%20CC13XX%20and%20CC26XX%2FDevelopment%20Tools%2FCC1350-LAUNCHXL%2FDriver%20Examples%2FRF%20Examples%2FRF%20Dual%20Mode%20Wireless%20Sensor%20Network%20Node
+	"> rfWsnDmNode</a> example in CCS as a basis for this tutorial. Basically any of the examples in the TI-RTOS CC13xx/CC26xx SDK can be used to build a OAD capable image, but since the rfWsnNode and Concentrator examples already contain code for getting back to BLE stack mode (i.e. double button press for 10s) we will for the sake of simplicity use this as a starting point.<br>
+
+									To get started follow these steps:
+								</div>
+								<div class="card-content">
+									<iron-list>
+										<div class="item">
+											<div class="circle"><span>1</span></div>
+											<div class="pad">
+												<div class="primary">Import rfWsnDmNode from the Resource Explorer in Code Composer Studio.</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>2</span></div>
+											<div class="pad">
+												<div class="primary">In project option -> ARM Compiler -> Advanced Options -> predefined symbols add 'USE_BIM' define</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>3</span></div>
+											<div class="pad">
+												<div class="primary">In project option -> ARM Hex Utility -> check Enable ARM Hex Utility</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>4</span></div>
+											<div class="pad">
+												<div class="primary">In CC1350_LAUNCHXL.cmd move the application start address to page 2 + 10B BIM header:<br>
+												<p><img border=0 id="Picture 1" src="images/snippet_step4.PNG"></p>
+												</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>5</span></div>
+											<div class="pad">
+												<div class="primary">Open rfDmExamples.cfg, click the ‘cfg script’tabe to edit the file directly and not use the GUI editor.<br>a. Comment out the ROM config at line 367 so that TIRTOS is not in ROM. This is because the ROM’ed TIRTOS assumes TIRTOS const data is in the same location as the BIM header.</div>
+												<p><img border=0 id="Picture 2" src="images/snippet_step5a.PNG"></p><br>
+												<div class="primary">b.	Move the reset vector at line 202 to be above page 0 and the BIM header:</div>
+												<p><img border=0 id="Picture 3" src="images/snippet_step5b.PNG"></p>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>6</span></div>
+											<div class="pad">
+												<div class="primary">Build the project to generate the intel hex file</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>7</span></div>
+											<div class="pad">
+												<div class="primary">Convert the .hex to the format required by the iOS OAD app</div>
+												<p>a. Clone or copy the OAD conversion script at <a href="https://github.com/ti-simplelink/ble_examples/tree/master/tools/scripts">ti-simplelink Github</a></p>
+												b. install python
+												<p>c. install crcmod:</p>
+													  <ul>
+															<li>Download from <a href="https://pypi.python.org/pypi/crcmod#downloads">python.org</a></li>
+													    <li>Extract the files</li>
+													    <li>Cd into the dir and run 'python setup-py install'</li>
+														</ul>
+												<p>d. install intelhex:</p>
+														<ul>
+															<li>Download from <a href="https://pypi.python.org/pypi/IntelHex#downloads">python.org</a></li>
+															<li>Extract the files</li>
+													    <li>Cd into the dir and run 'python setup-py install'</li>
+														</ul>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>8</span></div>
+											<div class="pad">
+												<div class="primary">Run the script to convert the file</div>
+												python ~/[path_to_script]]/oad_image_tool.py rfWsnDmConcentrator_CC1350_LAUNCHXL_TI_CC1350F128.hex -ob rfWsnDmConcentrator_CC1350_LAUNCHXL_TI_CC1350F128_oad.bin -m 0x1000 -r :0xE000
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>9</span></div>
+											<div class="pad">
+												<div class="primary">Send the resulting <app>_oad.bin file to an email account that you can access from you iOS device.</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>10</span></div>
+											<div class="pad">
+												<div class="primary">Open the SensorTag app on the iOS device, if the CC1350LP is running the BLE FW give it a reset and you should see it in the list of devices, click on the CC135LP and open the sensor view.</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>11</span></div>
+											<div class="pad">
+												<div class="primary">Open the e-mail on the iOS device, <app>_oad.bin click the attachment and open with the SensorTag App</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>12</span></div>
+											<div class="pad">
+												<div class="primary">When it switches back to the SensorTag App select FW Download then select the file that was in the e-mail which should now be in the list of available firmwares.</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>13</span></div>
+											<div class="pad">
+												<div class="primary">The App built at the start should be downloaded to the LP, once downloaded the CC1350LP will reset and run your app! If the App does not start you may need to reset the device manually by pressing the reset button.</div>
+											</div>
+										</div>
+										<div class="item">
+											<div class="circle"><span>14</span></div>
+											<div class="pad">
+												<div class="primary">To get back to the BLE stack/app mode press and hold BTN-1 and BTN-2 for >5s until the green led blinks rapidly (note this requires the button logic from the one of the fWsnDm examples). If the BLE FW does not start you may need to reset the device manually.</div>
+											</div>
+										</div>
+									</iron-list>
+								</div>
+							</paper-card>
+
+							<paper-card heading="Explore the CC1350 resources" elevation="0">
+								<div class="card-content">
+									<span ><p>
+										To see all available resources associated with the CC1350, click on <a target="_blank" href="/tirex/#/All?link=TI-RTOS%20for%20CC13XX%20and%20CC26XX%2FDevelopment%20Tools%2FCC1350-LAUNCHXL">this link</a> to filter out all the incompatible projects and collateral.
+									</p>
+									<p>Available in resource explorer are code examples using TI-RTOS CC13xx/CC26xx SDK, documentation, Software Developers Guide and links to wiki articles and more. Feel free to navigate the available resources to jump-start your development.
+									</p>
+
+									</span>
+								</div>
+							</paper-card>
+							<paper-card heading="Additional Tools" elevation="0">
+								<div class="card-content">
+									<ul>
+										<li><a href=http://dev.ti.com/ide> CCS Cloud IDE</a>: Develop your code right in the cloud. Use this tool to import, modify and program code examples for your LaunchPad. Click CCS Project Import Icon anywhere in TI Resource Explorer to import that project into Cloud IDE. Cloud IDE will be automatically started with that project to get your started with development. my.ti.com login is required for use of Cloud IDE.</li>
+										<li><a href=http://dev.ti.com/bpchecker>Booster Pack checker</a>: Verify whether Booster Packs <a href=http://www.ti.com/ww/en/launchpad/boosterpacks.html>What's This</a> are compatible with your LaunchPad.</li>
+									</ul>
+								</div>
+							</paper-card>
+
+							<!--
+							<paper-card heading="GUI Composer App" elevation="0">
+								<div class="card-content">
+									<iframe src="./blinky2/index.html" width="900px;" height="300px;"></iframe>
+								</div>
+							</paper-card>
+							-->
+
+						</div>
+
+						<!-- build:js scripts/app.js -->
+						<!--
+						<script src="scripts/app.js"></script>
+					-->
+						<!-- endbuild-->
+					</body>
+<script>
+	     var pages = document.querySelector('iron-pages');
+	     var tabs = document.querySelector('paper-tabs');
+
+	    tabs.addEventListener('iron-select', function() {
+	        pages.selected = tabs.selected;
+	    });
+</script>
+
+				</html>

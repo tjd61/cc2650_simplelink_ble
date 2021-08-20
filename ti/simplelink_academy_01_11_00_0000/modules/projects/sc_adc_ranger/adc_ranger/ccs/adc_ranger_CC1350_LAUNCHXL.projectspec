@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<projectSpec>
+    <project
+        title="adc_ranger_CC1350_LAUNCHXL"
+        name="adc_ranger_CC1350_LAUNCHXL"
+        device="CC1350F128"
+        endianness="little"
+        connection="common/targetdb/connections/TIXDS110_Connection.xml"
+        toolChain="TI"
+        linkerCommandFile=""
+        compilerBuildOptions="-mv7M3 --code_state=16 --abi=eabi -me -O4 --opt_for_speed=0 -g --c99 --gcc --gen_func_subsections=on --display_error_number --diag_warning=255 --diag_wrap=off
+        -DPOWER_SAVING
+        -Dxdc_runtime_Assert_DISABLE_ALL
+        -DXxdc_runtime_Log_DISABLE_ALL
+        -DCC13XXWARE
+        -Dxdc_FILE=&quot;\&quot;${InputFileName}\&quot;&quot;
+        -DUARTLOG_NUM_EVT_BUF=32
+
+        -I${PROJECT_BUILD_BASE}/../../support_files/Components/uart_log
+        -I${PROJECT_LOC}/Application
+        -I${PROJECT_LOC}/Scif
+        -I${PROJECT_LOC}/Board
+        -I${CC13XXWARE}
+        "
+
+        linkerBuildOptions="-l${CC13XXWARE}/driverlib/bin/ccs/driverlib.lib -x  --diag_suppress=16002-D --diag_suppress=10247-D --diag_suppress=10325-D --diag_suppress=10229-D"
+        description=""
+        launchWizard="false"
+
+        buildCommandFlags="-k,-j"
+        preBuildStep=""
+        postBuildStep="${CG_TOOL_HEX} -order MS --memwidth=8 --romwidth=8 --intel -o      ${ProjName}.hex ${ProjName}.out"
+        >
+
+        <property name="type"            value="rtsc"/>
+        <property name="products"        value="com.ti.rtsc.TIRTOSCC13XX_CC26XX:2.20.1.08"/>
+        <property name="xdcToolsVersion" value="3.32.00.06"/>
+
+        <property name="target"           value="ti.targets.arm.elf.M3"/>
+        <property name="platform"         value="ti.platforms.simplelink:CC1350F128"/>
+        <property name="buildProfile"     value="release"/>
+        <property name="isHybrid"         value="true"/>
+        <property name="configuroOptions" value="--compileOptions &quot;${COMPILER_FLAGS} &quot; "/>
+
+        <!-- Path Variables -->
+        <pathVariable name="EXT_TI_PRODUCTS_DIR" path="../../../../../../" scope="project"></pathVariable>
+        <pathVariable name="CC13XXWARE" path="${EXT_TI_PRODUCTS_DIR}/tirtos_cc13xx_cc26xx_2_20_01_08/products/cc13xxware_2_04_02_17240" scope="project"></pathVariable>
+        <pathVariable name="TI_RTOS_DRIVERS_BASE" path="${EXT_TI_PRODUCTS_DIR}/tirtos_cc13xx_cc26xx_2_20_01_08/products/tidrivers_cc13xx_cc26xx_2_20_01_10/packages" scope="project"></pathVariable>
+        <pathVariable name="PROJECT_BUILD_BASE" path=".." scope="project"></pathVariable>
+
+
+        <!-- Startup -->
+        <file path="PROJECT_BUILD_BASE/src/Startup/main.c" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Startup" createVirtualFolders="true">
+        </file>
+
+
+        <!-- Application -->
+        <file path="PROJECT_BUILD_BASE/src/Application/mainTask.c" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Application" createVirtualFolders="true">
+        </file>
+        <file path="PROJECT_BUILD_BASE/src/Application/application.h" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Application" createVirtualFolders="true">
+        </file>
+        <file path="PROJECT_BUILD_BASE/src/Application/scTask.c" openOnCreation="true" excludeFromBuild="false" action="copy" targetDirectory="Application" createVirtualFolders="true">
+        </file>
+
+
+        <!-- Scif -->
+        <file path="PROJECT_BUILD_BASE/src/Scif/scif.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="Scif">
+        </file>
+        <file path="PROJECT_BUILD_BASE/src/Scif/scif.c" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="Scif">
+        </file>
+        <file path="PROJECT_BUILD_BASE/src/Scif/scif_framework.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="Scif">
+        </file>
+        <file path="PROJECT_BUILD_BASE/src/Scif/scif_framework.c" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="Scif">
+        </file>
+        <file path="PROJECT_BUILD_BASE/src/Scif/scif_osal_tirtos.h" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="Scif">
+        </file>
+        <file path="PROJECT_BUILD_BASE/src/Scif/scif_osal_tirtos.c" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="Scif">
+        </file>
+        <file path="../../adc_ranger_cc1350_solution.scp" openOnCreation="false" excludeFromBuild="false" action="copy" targetDirectory="Scif">
+        </file>
+
+
+        <!-- TOOLS -->
+        <file path="./config/app_uartlog.cfg" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="TOOLS" createVirtualFolders="true">
+        </file>
+
+
+        <!-- Utils -->
+        <file path="../../../support_files/Components/uart_log/uart_logs.c" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Utils" createVirtualFolders="true">
+        </file>
+
+
+        <!-- Board -->
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC1350_LAUNCHXL/Board.h" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Board" createVirtualFolders="true">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC1350_LAUNCHXL/CC1350_LAUNCHXL.h" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Board" createVirtualFolders="true">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC1350_LAUNCHXL/CC1350_LAUNCHXL.c" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Board" createVirtualFolders="true">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC1350_LAUNCHXL/CC1350_LAUNCHXL.cmd" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Board" createVirtualFolders="true">
+        </file>
+        <file path="TI_RTOS_DRIVERS_BASE/ti/boards/CC1350_LAUNCHXL/ccfg.c" openOnCreation="" excludeFromBuild="false" action="copy" targetDirectory="Board" createVirtualFolders="true">
+        </file>
+
+        </project>
+</projectSpec>

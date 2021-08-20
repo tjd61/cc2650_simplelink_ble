@@ -1,0 +1,12 @@
+LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/arch=x86_64
+LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/name=Local
+LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/os=win32
+configDescList=org.eclipse.launchbar.core.descriptorType.default\:project_zero_stack_cc2650,org.eclipse.launchbar.core.descriptorType.default\:project_zero_app_cc2650launchxl,org.eclipse.launchbar.core.descriptorType.default\:empty_min_CC2650_LAUNCHXL_TI,org.eclipse.launchbar.core.descriptorType.default\:TI-RTOS Lab 1 LAUNCHXL
+eclipse.preferences.version=1
+org.eclipse.launchbar.core.descriptorType.default\:TI-RTOS\ Lab\ 1\ LAUNCHXL/activeLaunchMode=debug
+org.eclipse.launchbar.core.descriptorType.default\:TI-RTOS\ Lab\ 1\ LAUNCHXL/activeLaunchTarget=org.eclipse.launchbar.core.launchTargetType.local\:Local
+org.eclipse.launchbar.core.descriptorType.default\:empty_min_CC2650_LAUNCHXL_TI/activeLaunchMode=debug
+org.eclipse.launchbar.core.descriptorType.default\:project_zero_app_cc2650launchxl/activeLaunchMode=run
+org.eclipse.launchbar.core.descriptorType.default\:project_zero_app_cc2650launchxl/activeLaunchTarget=org.eclipse.launchbar.core.launchTargetType.local\:Local
+org.eclipse.launchbar.core.descriptorType.default\:project_zero_stack_cc2650/activeLaunchMode=debug
+org.eclipse.launchbar.core.descriptorType.default\:project_zero_stack_cc2650/activeLaunchTarget=org.eclipse.launchbar.core.launchTargetType.local\:Local

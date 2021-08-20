@@ -1,0 +1,300 @@
+<!doctype html>
+<!--
+	Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+	This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+	The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+	The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+	Code distributed by Google as part of the polymer project is also
+	subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<html lang="">
+<head>
+	<meta charset="utf-8">
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Welcome to CC1310 Launchpad</title>
+
+	    <script src="/components/gc/1.0.0/webcomponentsjs/webcomponents-lite.min.js"></script>
+
+		<!-- Iron elements -->
+
+		<link rel="import" href="/components/gc/1.0.0/iron-image/iron-image.html">
+
+		<!-- Paper elements -->
+		<link rel="import" href="/components/gc/1.0.0/paper-material/paper-material.html">
+		<link rel="import" href="/components/gc/1.0.0/paper-card/paper-card.html">
+
+		<link rel="import" href="/components/gc/1.0.0/ti-widget-flashtool/ti-widget-flashtool.html">
+
+		<!-- Add your elements here -->
+
+		<link rel="import" href="./styles/app-theme.html">
+		<link rel="stylesheet" href="./styles/main.css">
+		<link rel="import" href="./styles/shared-styles.html">
+
+		<!-- endreplace-->
+
+	<!-- For shared styles, shared-styles.html import in elements.html -->
+	<!--<style is="custom-style" include="shared-styles">-->
+	<style is="custom-style">
+
+			#editorDiv {
+            margin-left:80px;
+            margin-right:80px;
+            }
+
+			#cards {
+			max-width: 1000px;
+			margin-left: auto;
+			margin-right: auto;
+			}
+
+			.container {
+			@apply(--layout-horizontal);
+			@apply(--layout-wrap);
+			}
+
+			paper-card {
+				width: 100%;
+				margin-bottom: 16px;
+
+				--paper-card-header-text: {
+				font-size: 2.6em;
+				color: #189;
+				font-family: 'Roboto', arial, sans-serif;
+				font-weight: 300;
+				};
+
+			}
+
+			.fancy_inner {
+				background-size: 100%;
+				background-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 20%, rgba(0,0,0,0.8) 100%);
+				z-index:1;
+				position: absolute;
+				bottom: 41px;
+				left:16px;
+				width: 97%;
+				padding-top: 60px;
+				padding-bottom: 60px;
+			}
+
+			.fancy_inner .medium {
+			font-size:48px;
+			color: #FFFFFF;
+			padding-bottom: 8px;
+			padding-left: 80px;
+			font-family: 'Roboto', arial, sans-serif;
+			font-weight: 300;
+
+			}
+
+			.fancy_inner .small {
+			font-size: 22px;
+			color: #FFFFFF;
+			padding-bottom: 8px;
+			padding-left: 80px;
+			font-family: 'Roboto', arial, sans-serif;
+			font-weight: 300;
+			}
+
+			.circle{
+			-moz-border-radius: 50%;
+			-webkit-border-radius: 50%;
+			border-radius: 50%;
+			font-size:24px;
+			background-color:#555;
+			color:#fff;
+			min-width:30px;
+			max-width:30px;
+			height:30px;
+			display: table-cell;
+			vertical-align: middle;
+			text-align: center;
+			box-shadow: 2px 2px 2px #aaa;
+			}
+
+			.circle span {
+			position:relative;
+			top:3px;
+			}
+
+			.notelayout {
+			font-size: 12px;
+			@apply(--layout-horizontal);
+			margin: 1em;
+			background: #F1FFF7;
+			border: 1px solid #C9F0DD;
+			}
+
+			iron-list {
+			background-color: var(--paper-grey-200, #eee);
+			padding-bottom: 16px;
+			}
+
+			.item {
+			@apply(--layout-horizontal);
+			padding-bottom: 16px;
+			}
+
+			.item:focus {
+			outline: 0;
+			border-color: #666;
+			}
+
+			.pad {
+			padding: 0 16px;
+			width: 90%;
+			@apply(--layout-vertical);
+			}
+
+			.tabs {
+				--paper-tabs: {
+						background-color: #555;
+				};
+			}
+
+			a {
+			    color: #189;
+			    text-decoration: none;
+			    outline: 0;
+			}
+	</style>
+
+	<script>
+
+        var loadjsfile = function(filename) {
+            var fileref = document.createElement("script");
+            fileref.src = filename;
+            document.write( fileref.outerHTML );
+        };
+
+        var loadCSSFile = function( filename ){
+            var fileref = document.createElement("link");
+            fileref.href = filename;
+            fileref.type = "text/css";
+            fileref.rel = "stylesheet";
+            document.write( fileref.outerHTML );
+        };
+
+
+        //window.TI_CLOUD_AGENT_HOST = "dev.ti.com";
+        //window.TI_CLOUD_AGENT_PORT = "";
+
+        //var cloudServer = "http://" + window.TI_CLOUD_AGENT_HOST;
+        var cloudServer = "";
+        loadjsfile(cloudServer + "/ticloudagent/q.js");
+        loadjsfile(cloudServer + "/ticloudagent/agent.js");
+        loadCSSFile(cloudServer + "/ticloudagent/agent-flash.css");
+        loadjsfile(cloudServer + "/ticloudagent/agent-flash.js");
+</script>
+
+</head>
+<body unresolved class="fullbleed layout vertical">
+		<span id="browser-sync-binding"></span>
+		<template is="dom-bind" id="app">
+			<div id="cards">
+
+				<paper-card elevation="0">
+					<div class="card-content">
+						<iron-image style="width:969px;height:543px;" sizing="contain" src="images/cc1310lp_rendered_persp.png">
+						</iron-image>
+						<div class="fancy_inner">
+							<div class="medium">Meet the CC1310 Launchpad</div>
+						</div>
+					</div>
+				</paper-card>
+
+				<paper-card heading="Meet the LAUNCHXL-CC1310 LaunchPad!" elevation="0">
+					<div class="card-content">
+						<h4>Congratulations on choosing the CC1310 Wireless MCU and LaunchPad ecosystem!</h4>
+						<p>The CC1310 LaunchPad kit brings easy and low cost sub-1GHz proprietary RF connections to the LaunchPad ecosystem with the SimpleLink ultra-low power CC13xx family of devices. This LaunchPad kit brings support for the <a href="http://www.ti.com/product/cc1310">C1310 wireless MCU</a></p>
+						<p>The CC1310 device is a wireless MCU targeting sub-1GHz RF GFSK, Long Range Mode (LRM), and other modulation formats. The CC1310 device contains a 32-bit ARM&reg; Cortex&reg;-M3 processor that runs at 48 MHz as the main processor and a rich peripheral feature set that includes a unique ultra-low power sensor controller. This sensor controller is ideal for interfacing external sensors and for collecting analog and digital data autonomously while the rest of the system is in sleep mode.</p>
+						<p>The CC1310 LaunchPad is supported by a large set of software examples in the TI-RTOS For CC13XX and CC26XX SDK, showing best practice on how to implement and use different features of the CC1310.</p>
+					</div>
+				</paper-card>
+				<paper-card heading="A Closer Look at the Hardware" elevation="0">
+					<div class="card-content">
+						<p><img id="Picture 1" src="images/cc1310_launchpad_explained.PNG">
+						<ul>
+							<li>On-board emulation tool for flashing &amp; debugging firmware on the target CC1310 device.</li>
+							<li>40-pin dual-gender BoosterPack connectors</li>
+							<li>CC1310 Wireless Micro controller device</li>
+							<li>User red &amp; green LED</li>
+							<li>2x User switches</li>
+							<li>Access to all pins of the CC1310 device</li>
+							<li>Connector for external Antenna</li>
+							<li>8Mbit external serial (SPI) Flash memory</li>
+						</ul>
+						<h4>Power supply requirements:</h4>
+						<p>The LaunchPad is designed to be powered from a USB-compliant
+						power source, either a USB charger or a computer. When used this way, jumpers
+						need to be mounted on the 3V3 position of the central jumper block. An LDO
+						powered from the USB VBUS supply supplies 3.3V to the XDS debugger, the CC1310,
+						and associated circuitry including the 3V3-marked pins for BoosterPacks.</p>
+						<h4>Temperature range:</h4>
+						<p>The LaunchPad is designed for operation -25 to +70 C. Note
+						that other BoosterPacks and LaunchPads may have different temperature ranges,
+						and when combined, the combination will be set by the most restrictive combined
+						range.</p>
+
+					</div>
+				</paper-card>
+				<paper-card heading="Getting Started" elevation="0">
+					<div class="card-content">
+						<b>Send data between two CC1310 LaunchPads quickly</b>
+						<p>Please visit <a href="./project0_index.html#/?collapsetree=">CC1310 Project 0 </a> page to be able to see a very basic project in action including ability to program your device and send or receive data over a sub-1GHz RF link. This is the quickest way to get started and a good starting point for your application.
+						</p>
+					</div>
+				</paper-card>
+
+				<paper-card heading="Out of the Box Demo" elevation="0">
+					<div class="card-content">
+						<h4>CC1310 LaunchPad Out of the Box Demo</h4>
+						<p>The CC1310 LaunchPad is pre-programmed with a Packet Error Rate tester that allows you to test link with all the characterized typical settings. Simply connect the CC1310 LaunchPad to a computer or USB power supply using the included USB cable. When power is applied, the following is shown on the 430BOOST-SHARP96 LCD display (if connected) and the UART (115200 kbps, 8 data bits, 1 stop bit, no parity or flow control).</p>
+						<p><img border=0 width=625 height=468 id="Picture 3" src="images/cc1310_per_test_init_menu_lcd.png"></p>
+						<p><img border=0 width=625 height=468 id="Picture 4" src="images/cc1310_per_test_init_menu_uart.png"></p>
+						<p>As shown above, BTN-1 is used to select and BTN-2 is used to navigate (go to the next entry in the menu).</p> 
+                        <p>After pushing a button, the main menu is displayed:</p>
+						<p><img border=0 width=625 height=468 id="Picture 5" src="images/cc1310_per_test_main_menu_lcd.png"></p>
+						<p>The different menu choices are shown in the table below:</p>
+						<p><img id="Picture PER settings table" src="images/cc1310_per_test_table.PNG"></p>
+						<p>After setting up one CC1310 LaunchPad for RX mode and one for TX mode, the PER test is started by navigating (BTN-2) to the Start entry in the menu and then press BTN-1 to start the test. The receiver should be started before the transmitter.</p>
+						<p><img border=0 width=625 height=468 id="Picture 6" src="images/cc1310_per_test_rx_menu_lcd.png"></p>
+						<p><img border=0 width=625 height=468 id="Picture 7" src="images/cc1310_per_test_tx_menu_lcd.png"></p>
+						<p>You click the button below to flash your Launchpad and revert back to the out of the box functionality of your Launchpad. First time use of this tool will request a plug-in installation for flashing.
+						</p>
+						<ti-widget-flashtool showflashbtn id="flashtool"  deviceName="CC1310F128" fileName="per-test_cc1310_launchxl_ver_1_0.hex" fileFolderName="./">
+						</ti-widget-flashtool>
+						<h4></h4>
+					</div>
+				</paper-card>
+
+				<paper-card heading="Advanced use of the LaunchPad hardware" elevation="0">
+					<div class="card-content">
+						<h4>Jumper block</h4>
+
+						<p>The jumper block in the middle of the board can be used to
+						disconnect the upper section (XDS110 debugger) from the bottom section
+						(CC1310). The jumpers are mounted by default. If you want to debug the CC1310
+						from an external debugger, you need to remove all the jumpers and connect the
+						debugger to the socket marked CC1310 In. </p>
+
+						<p>It is also possible to use the LaunchPad to debug external
+						targets. In this case, remove all the jumpers and connect the external target
+						to the socket marked XDS110 Out.</p>
+
+						<p>The jumper block marked VSENSE can be used to select the
+						source of power to the CC1310. Usually, power is supplied from USB and a jumper
+						is mounted in the position marked XDS110 power (factory default). If you want
+						to power CC1310 from an external supply, move the jumper to the position marked
+						<i>Extern. Pwr</i>, and connect the external supply to the 3V3 pin on J1. Also
+						make sure to remove the 3V3 jumper from the main jumper block. Make sure that
+						the voltage applied stays within the supply range of the CC1310.</p>
+					</div>
+				</paper-card>
+
+			</div>
+		</template>
+	</body>
+</html>

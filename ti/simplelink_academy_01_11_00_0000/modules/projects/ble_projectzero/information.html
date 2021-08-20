@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<title>BLE Project Zero</title>
+
+<xmp theme="united2" style="display:none;" class="col-xs-6">
+
+This project is based on the SimpleBLEPeripheral sample application in the TI BLE SDK.
+
+The following changes are done:
+- Import some files to the CCS Workspace instead of linking to filesystem.
+- Rename filenames and function names.
+- Remove OAD support
+- Use various board files per kit
+- Log to UART instead of writing to display.
+- Remove SimpleGATTProfile and use new LED, Button and Data services instead.
+
+This project can also be found in CCS Cloud, and it's recommended to go through the getting started guide there.
+* [Project Zero on dev.ti.com](http://dev.ti.com/tirex/#/Device/CC2650?link=CC26xx%20Bluetooth%20Smart%2FDevelopment%20Tools%2FCC2650-LAUNCHXL%2FDocuments%2FCC2650-LAUNCHXL%20Project%20Zero)
+* **NOTE** The project in CCS Cloud is made for TI BLE SDK v2.1 and will have some minor differences.
+
+File import
+================
+In order to have the workshop as non-destructive as possible, certain files are imported to the workspace, that is, copied from a location on disk to wherever the Code Composer Studio workspace directory is.
+
+This means that if you change for example project_zero.c, the changes to the file will not be reflected in the directory the SimpleLink Academy files are installed in, but the directory you select as workspace directory when Code Composer Studio starts up.
+
+
+
+File | Description
+--- | ---------
+main.c | Initialize IOs, set up printf, create TI-RTOS tasks.
+project_zero.c | User application task. Main task loop and BLE callbacks.
+project_zero.h | User application task header. API for task creation in main.c.
+led_service.c/h | Service implementation
+button_service.c/h | Service implementation
+data_service.c/h | Service implementation
+devinfoservice.c/h | Service implementation
+&lt;Board files&gt; | Pin and peripheral configuration
+app_ble_uartlog.cfg | TI-RTOS configuration file, with log hooks.
+
+Note that when the TI-RTOS configuration file is in the workspace, the generated output from XDC-tools (TI-RTOS kernel configration etc) will also be placed in the workspace.
+
+[[r! Note on linked files
+Other files in the projects are linked from the file system directly, for example TI-RTOS or BLE SDK files. These have the following icon with a tiny arrow:
+
+![LinkFile](../../../web_support/resources/linked_file_zoomed.png)
+
+Any changes done to these files are reflected in all projects that use these files.
+]]
+
+Board files
+------------
+
+Board files are copied from TI-RTOS into the workspace. Editing these will not affect the example/stock board files.
+
+
+Logging
+===================
+
+Additional files `uart_log.c` have been added, and the TI-RTOS config script has been modified to redirect TI-RTOS `Log_xx` calls to the UART.
+
+See [our GitHub page](https://github.com/ti-simplelink/ble-sdk-210-extra/tree/master/Components/uart_log) for details on how this is done.
+
+[[y! Note on size
+
+The logging takes up ~23kB of Flash memory in this application, because it uses `System_printf` functionality, as well as the `UART` driver and a `Text` table from TI-RTOS. In addition there is some overhead per statement, as well as the strings themselves.
+
+To **remove** the impact `Log` has on the image size, add a global compiler define `xdc_runtime_Log_DISABLE_ALL` as well as changing the TI-RTOS config file to read `Text.isLoaded = false;` instead of `true`.
+
+]]
+
+
+Stack library selection
+========================
+
+The BLE SDK projects use an external tool called LibSearch to make a linker command file which includes the correct stack library (Peripheral, Central, etc) based on the settings in a file called `build_config.opt`. In this project, the LibSearch tool is instructed (via pre-build step for stack) to create this file in the workspace under TOOLS/lib_linker.cmd.
+
+
+Memory areas
+==================
+Because the projects in the BLE SDK are able to change Stack configuration and library, the size of the stack project will vary, and another tool `Frontier` is used to optimize the boundary between the App and the Stack projects to give as much space as possible to the App project.
+
+
+
+
+</xmp>
+<script src="../../../web_support/strapdown/vendor/jquery-1.11.2.min.js"></script>
+<script src="../../../web_support/strapdown/vendor/bootstrap.min.js"></script>
+<script src="../../../web_support/strapdown/v/0.2/strapdown.js"></script>
+</html>

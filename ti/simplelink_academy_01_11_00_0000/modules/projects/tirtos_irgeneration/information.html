@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<title>TI-RTOS IR Generation Lab</title>
+
+<xmp theme="united2" style="display:none;" class="col-xs-6">
+
+This project assumes that the student is familiar with the basic features of `TI-RTOS`. Unfamiliar students are encourage to do the `TI-RTOS Basic - Lab1` first.
+
+File import
+================
+In order to have the training as non-destructive as possible, most files are imported to the workspace, that is, copied from a location on disk to wherever the Code Composer Studio workspace directory is.
+
+This means that if you change a source file, the changes to the file will not be reflected in the directory the SimpleLink Academy files are installed in, but the directory you select as workspace directory when Code Composer Studio starts up.
+
+
+File | Description
+---  | -----------
+Board.c                     | Peripheral module objects and initial PIN configuration
+Board.h                     | PIN and other RTOS drivers' friendly name assignment
+irgeneration-main.c         | Main application, starting point for lab assignment
+IRGENCC26XX.c               | The IR driver implementation
+IRGENCC26XX.h               | The IR driver header
+flash_debug.cfg             | TI-RTOS configuration file, some debug options enabled.
+flash_debug-solution.cfg    | Updated TI-RTOS configuration file, part of assignment solution.
+irgeneration-main-solution.c| Solution for the assignment.
+CC2650_LAUNCHXL-solution.c  | Updated board file, part of assignment solution
+CC2650_LAUNCHXL-solution.h  | Updated board file header, part of assignment solution
+
+Note that when the TI-RTOS configuration file is in the workspace, the generated output from XDC-tools (TI-RTOS kernel configration etc) will also be placed in the workspace.
+
+Note also that other files in the projects are linked from the file system directly. These have the following icon with a tiny arrow:
+
+![LinkFile](../../../web_support/resources/linked_file_zoomed.png)
+
+Any changes done to these files are reflected in all projects that use these files.
+
+
+</xmp>
+<script src="../../../web_support/strapdown/vendor/jquery-1.11.2.min.js"></script>
+<script src="../../../web_support/strapdown/vendor/bootstrap.min.js"></script>
+<script src="../../../web_support/strapdown/v/0.2/strapdown.js"></script>
+</html>
